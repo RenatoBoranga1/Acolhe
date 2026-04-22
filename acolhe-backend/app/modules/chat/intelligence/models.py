@@ -101,6 +101,19 @@ class ResponseValidationResult:
 
 
 @dataclass(frozen=True)
+class OrchestrationMetrics:
+    fallback_used: bool
+    risk_level: str
+    situation_type: str
+    response_mode: str
+    repaired: bool
+    validation_issues: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class ChatOrchestrationResult:
     assistant_text: str
     risk: RiskAssessmentResult
@@ -109,3 +122,4 @@ class ChatOrchestrationResult:
     response_mode: ResponseMode
     validation: ResponseValidationResult
     ctas: list[str]
+    metrics: OrchestrationMetrics

@@ -134,6 +134,7 @@ class ChatService:
                 "situation": orchestration.situation.to_dict(),
                 "response_mode": orchestration.response_mode.to_dict(),
                 "validation": orchestration.validation.to_dict(),
+                "metrics": orchestration.metrics.to_dict(),
             },
         )
         suggestions = [

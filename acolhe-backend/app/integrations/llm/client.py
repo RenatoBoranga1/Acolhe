@@ -39,8 +39,10 @@ class LLMClient:
             f"O nivel de risco calculado foi: {risk_level}. "
             "Quando for apropriado, inclua uma interpretacao cuidadosa do que a pessoa trouxe, "
             "sem afirmar certeza absoluta. "
-            "Se for alto ou critico, priorize seguranca imediata e reduza a resposta."
+            "Se for alto ou critico, priorize seguranca imediata e reduza a resposta. "
+            "Evite respostas formulaicas; use detalhes do contexto fornecido e varie a estrutura."
         )
+        temperature = self._temperature_for_risk(risk_level)
         payload = {
             "model": self.settings.llm_model,
             "messages": [
@@ -55,7 +57,11 @@ class LLMClient:
                 *history,
                 {"role": "user", "content": message},
             ],
-            "temperature": 0.4,
+            "temperature": temperature,
+            "top_p": 0.92,
+            "presence_penalty": 0.2,
+            "frequency_penalty": 0.35,
+            "max_tokens": 220 if risk_level in {"high", "critical"} else 360,
         }
 
         try:
@@ -74,3 +80,10 @@ class LLMClient:
         except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError):
             logger.warning("LLM unavailable for chat response, using deterministic fallback.")
             return None
+
+    def _temperature_for_risk(self, risk_level: str) -> float:
+        if risk_level in {"high", "critical"}:
+            return 0.28
+        if risk_level == "moderate":
+            return 0.52
+        return 0.58
