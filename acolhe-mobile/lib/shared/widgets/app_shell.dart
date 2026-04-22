@@ -1,5 +1,5 @@
+import 'package:acolhe_mobile/core/navigation/safe_navigation.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
-import 'package:acolhe_mobile/shared/widgets/design_system.dart';
 import 'package:acolhe_mobile/shared/widgets/responsive_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +15,7 @@ class AppShell extends ConsumerWidget {
     this.padding = const EdgeInsets.symmetric(vertical: 24),
     this.actions,
     this.maxContentWidth,
+    this.backFallbackRoute = '/chat',
   });
 
   final String title;
@@ -24,6 +25,7 @@ class AppShell extends ConsumerWidget {
   final EdgeInsets padding;
   final List<Widget>? actions;
   final double? maxContentWidth;
+  final String backFallbackRoute;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,17 +34,26 @@ class AppShell extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
     final viewportWidth = MediaQuery.sizeOf(context).width;
     final horizontalPadding = AppResponsive.horizontalPadding(viewportWidth);
-    final resolvedMaxWidth = maxContentWidth ?? AppResponsive.shellMaxWidth(viewportWidth);
+    final resolvedMaxWidth =
+        maxContentWidth ?? AppResponsive.shellMaxWidth(viewportWidth);
 
-    return Scaffold(
+    final shell = Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: isDark
-                ? const [Color(0xFF10171D), Color(0xFF17212A), Color(0xFF10171D)]
-                : const [Color(0xFFF5EFE9), Color(0xFFF2F5F6), Color(0xFFF7F1EC)],
+                ? const [
+                    Color(0xFF10171D),
+                    Color(0xFF17212A),
+                    Color(0xFF10171D)
+                  ]
+                : const [
+                    Color(0xFFF5EFE9),
+                    Color(0xFFF2F5F6),
+                    Color(0xFFF7F1EC)
+                  ],
           ),
         ),
         child: SafeArea(
@@ -63,7 +74,11 @@ class AppShell extends ConsumerWidget {
                       children: [
                         if (showBack)
                           IconButton(
-                            onPressed: () => context.pop(),
+                            tooltip: 'Voltar',
+                            onPressed: () => AcolheNavigation.goBackOrFallback(
+                              context,
+                              fallbackLocation: backFallbackRoute,
+                            ),
                             icon: const Icon(Icons.arrow_back_rounded),
                           ),
                         Expanded(
@@ -73,7 +88,8 @@ class AppShell extends ConsumerWidget {
                               Text(title, style: theme.textTheme.headlineSmall),
                               if (subtitle != null) ...[
                                 const SizedBox(height: 4),
-                                Text(subtitle!, style: theme.textTheme.bodyMedium),
+                                Text(subtitle!,
+                                    style: theme.textTheme.bodyMedium),
                               ],
                             ],
                           ),
@@ -83,7 +99,9 @@ class AppShell extends ConsumerWidget {
                           IconButton(
                             tooltip: 'Saida rapida',
                             onPressed: () {
-                              ref.read(authControllerProvider.notifier).showPrivacyShield();
+                              ref
+                                  .read(authControllerProvider.notifier)
+                                  .showPrivacyShield();
                               context.go('/privacy');
                             },
                             icon: const Icon(Icons.visibility_off_outlined),
@@ -99,6 +117,17 @@ class AppShell extends ConsumerWidget {
           ),
         ),
       ),
+    );
+
+    return PopScope(
+      canPop: !showBack || GoRouter.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || !showBack) {
+          return;
+        }
+        context.go(backFallbackRoute);
+      },
+      child: shell,
     );
   }
 }

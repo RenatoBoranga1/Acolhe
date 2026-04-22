@@ -11,7 +11,8 @@ class IncidentRecordScreen extends ConsumerStatefulWidget {
   const IncidentRecordScreen({super.key});
 
   @override
-  ConsumerState<IncidentRecordScreen> createState() => _IncidentRecordScreenState();
+  ConsumerState<IncidentRecordScreen> createState() =>
+      _IncidentRecordScreenState();
 }
 
 class _IncidentRecordScreenState extends ConsumerState<IncidentRecordScreen> {
@@ -82,9 +83,13 @@ class _IncidentRecordScreenState extends ConsumerState<IncidentRecordScreen> {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: AppTextField(controller: _dateController, label: 'Data')),
+                      Expanded(
+                          child: AppTextField(
+                              controller: _dateController, label: 'Data')),
                       const SizedBox(width: 12),
-                      Expanded(child: AppTextField(controller: _timeController, label: 'Hora')),
+                      Expanded(
+                          child: AppTextField(
+                              controller: _timeController, label: 'Hora')),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -116,7 +121,8 @@ class _IncidentRecordScreenState extends ConsumerState<IncidentRecordScreen> {
                   AppTextField(
                     controller: _descriptionController,
                     label: 'Descricao',
-                    hint: 'O que aconteceu, apenas ate onde se sentir confortavel.',
+                    hint:
+                        'O que aconteceu, apenas ate onde se sentir confortavel.',
                     maxLines: 6,
                   ),
                   const SizedBox(height: 14),
@@ -144,9 +150,14 @@ class _IncidentRecordScreenState extends ConsumerState<IncidentRecordScreen> {
               label: 'Gerar resumo cronologico',
               onPressed: () async {
                 final record = _buildRecord();
-                await ref.read(journalControllerProvider.notifier).saveRecord(record);
-                final summary = await ref.read(journalControllerProvider.notifier).generateSummary(record);
-                ref.read(selectedIncidentSummaryProvider.notifier).state = summary;
+                await ref
+                    .read(journalControllerProvider.notifier)
+                    .saveRecord(record);
+                final summary = await ref
+                    .read(journalControllerProvider.notifier)
+                    .generateSummary(record);
+                ref.read(selectedIncidentSummaryProvider.notifier).state =
+                    summary;
                 if (!mounted) {
                   return;
                 }
@@ -156,12 +167,16 @@ class _IncidentRecordScreenState extends ConsumerState<IncidentRecordScreen> {
             secondary: AppButton.secondary(
               label: 'Salvar sem resumo',
               onPressed: () async {
-                await ref.read(journalControllerProvider.notifier).saveRecord(_buildRecord());
+                await ref
+                    .read(journalControllerProvider.notifier)
+                    .saveRecord(_buildRecord());
                 if (!mounted) {
                   return;
                 }
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Registro salvo com seguranca no aparelho.')),
+                  const SnackBar(
+                      content:
+                          Text('Registro salvo com seguranca no aparelho.')),
                 );
               },
             ),
@@ -182,11 +197,13 @@ class IncidentSummaryScreen extends ConsumerWidget {
       title: 'Resumo cronologico',
       subtitle: 'Rascunho pessoal. Nao e documento oficial.',
       maxContentWidth: 760,
+      backFallbackRoute: '/incident-record',
       child: GlassCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Rascunho pessoal', style: Theme.of(context).textTheme.titleMedium),
+            Text('Rascunho pessoal',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               'Nao e documento oficial. Revise com calma antes de compartilhar com qualquer pessoa.',
