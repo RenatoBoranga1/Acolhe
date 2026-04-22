@@ -28,6 +28,8 @@ Decisao de produto aplicada:
 - o fluxo principal do chat usa o backend FastAPI em `/api/v1/chat` quando `API_BASE_URL` esta configurado;
 - o fallback local existe apenas para desenvolvimento/offline, mantendo uma resposta segura se a API falhar;
 - o historico de conversas ficou persistido localmente com conversa ativa salva;
+- o chat exibe sinais de inteligencia do backend, como nivel de risco, tipo de situacao, CTAs sugeridos e estados seguros de fallback;
+- em risco alto/critico, a UI prioriza ajuda urgente, plano de seguranca e rede de apoio;
 - a interface principal foi reorganizada como workspace com sidebar/drawer, historico, mensagens, empty state e composer fixo;
 - os outros modulos continuam acessiveis pela navegacao lateral, preservando a base funcional existente.
 
@@ -78,6 +80,12 @@ Com `API_BASE_URL`, o app consome os endpoints reais do backend:
 - `GET /api/v1/chat/conversations`
 - `POST /api/v1/chat/conversations`
 - `POST /api/v1/chat/message`
+
+Para mostrar metadados internos de depuracao no header do chat, rode com:
+
+```bash
+powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId SEU_DEVICE_ID -ApiBaseUrl http://SEU_IP_LOCAL:8000 -ExtraArgs "--dart-define=ACOLHE_DEBUG_CHAT=true"
+```
 
 ## Android Studio
 

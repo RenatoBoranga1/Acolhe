@@ -25,6 +25,8 @@ void main() {
       'response_mode': 'structured_guidance',
       'situation_type': 'duvida_se_foi_assedio',
       'conversation_context': {'emotional_state': 'confusa'},
+      'fallback_used': true,
+      'validation_repaired': true,
     });
 
     final result = dto.toDomain();
@@ -37,5 +39,7 @@ void main() {
     expect(result.responseMode, 'structured_guidance');
     expect(result.situationType, 'duvida_se_foi_assedio');
     expect(result.conversationContext?['emotional_state'], 'confusa');
+    expect(result.backendFallbackUsed, isTrue);
+    expect(result.validationRepaired, isTrue);
   });
 }

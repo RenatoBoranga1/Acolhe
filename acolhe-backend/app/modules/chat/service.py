@@ -154,4 +154,6 @@ class ChatService:
             response_mode=orchestration.response_mode.name,
             situation_type=orchestration.situation.type,
             conversation_context=orchestration.memory.to_dict(),
+            fallback_used=orchestration.metrics.fallback_used,
+            validation_repaired=orchestration.metrics.repaired,
         )

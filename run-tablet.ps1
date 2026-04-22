@@ -1,6 +1,7 @@
 param(
   [string]$DeviceId,
-  [string]$ApiBaseUrl = ""
+  [string]$ApiBaseUrl = "",
+  [string[]]$ExtraArgs = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,6 +37,8 @@ if ([string]::IsNullOrWhiteSpace($DeviceId)) {
   Write-Host "  powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId R9YT12345"
   Write-Host "Com backend remoto:"
   Write-Host "  powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId R9YT12345 -ApiBaseUrl http://192.168.0.15:8000"
+  Write-Host "Com metadados de debug do chat:"
+  Write-Host "  powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId R9YT12345 -ExtraArgs ""--dart-define=ACOLHE_DEBUG_CHAT=true"""
   exit 1
 }
 
@@ -43,6 +46,10 @@ $runArgs = @("run", "-d", $DeviceId)
 
 if (-not [string]::IsNullOrWhiteSpace($ApiBaseUrl)) {
   $runArgs += "--dart-define=API_BASE_URL=$ApiBaseUrl"
+}
+
+if ($ExtraArgs.Count -gt 0) {
+  $runArgs += $ExtraArgs
 }
 
 Write-Host "Rodando app no dispositivo $DeviceId"

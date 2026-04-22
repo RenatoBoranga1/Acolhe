@@ -23,6 +23,8 @@ def test_chat_message_flow(client) -> None:
     }
     assert data["situation_type"]
     assert data["conversation_context"]["current_risk_level"] == data["risk"]["level"]
+    assert isinstance(data["fallback_used"], bool)
+    assert isinstance(data["validation_repaired"], bool)
 
 
 def test_chat_varies_response_in_same_conversation(client) -> None:

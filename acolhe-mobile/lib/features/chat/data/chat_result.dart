@@ -10,6 +10,8 @@ class ChatSendResult {
     this.responseMode,
     this.situationType,
     this.conversationContext,
+    this.backendFallbackUsed = false,
+    this.validationRepaired = false,
     this.servedFromFallback = false,
   });
 
@@ -21,5 +23,7 @@ class ChatSendResult {
   final String? responseMode;
   final String? situationType;
   final Map<String, dynamic>? conversationContext;
+  final bool backendFallbackUsed;
+  final bool validationRepaired;
   final bool servedFromFallback;
 }

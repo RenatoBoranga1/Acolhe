@@ -40,11 +40,14 @@ class ChatState {
     required this.syncStatus,
     required this.latestCtas,
     required this.quickSuggestions,
+    required this.lastResponseUsedFallback,
+    required this.lastResponseWasRepaired,
     this.errorMessage,
     this.retryContext,
     this.responseMode,
     this.situationType,
     this.conversationContext,
+    this.lastSyncedAt,
   });
 
   final List<ConversationModel> conversations;
@@ -55,11 +58,14 @@ class ChatState {
   final ChatSyncStatus syncStatus;
   final List<String> latestCtas;
   final List<String> quickSuggestions;
+  final bool lastResponseUsedFallback;
+  final bool lastResponseWasRepaired;
   final String? errorMessage;
   final PendingResponseContext? retryContext;
   final String? responseMode;
   final String? situationType;
   final Map<String, dynamic>? conversationContext;
+  final DateTime? lastSyncedAt;
 
   bool get hasRetryAvailable => retryContext != null;
 
@@ -79,6 +85,8 @@ class ChatState {
     ChatSyncStatus? syncStatus,
     List<String>? latestCtas,
     List<String>? quickSuggestions,
+    bool? lastResponseUsedFallback,
+    bool? lastResponseWasRepaired,
     String? errorMessage,
     bool clearError = false,
     PendingResponseContext? retryContext,
@@ -86,6 +94,7 @@ class ChatState {
     String? responseMode,
     String? situationType,
     Map<String, dynamic>? conversationContext,
+    DateTime? lastSyncedAt,
     bool clearResponseMetadata = false,
   }) {
     return ChatState(
@@ -97,6 +106,12 @@ class ChatState {
       syncStatus: syncStatus ?? this.syncStatus,
       latestCtas: latestCtas ?? this.latestCtas,
       quickSuggestions: quickSuggestions ?? this.quickSuggestions,
+      lastResponseUsedFallback: clearResponseMetadata
+          ? false
+          : lastResponseUsedFallback ?? this.lastResponseUsedFallback,
+      lastResponseWasRepaired: clearResponseMetadata
+          ? false
+          : lastResponseWasRepaired ?? this.lastResponseWasRepaired,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       retryContext:
           clearRetryContext ? null : retryContext ?? this.retryContext,
@@ -107,6 +122,7 @@ class ChatState {
       conversationContext: clearResponseMetadata
           ? null
           : conversationContext ?? this.conversationContext,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
     );
   }
 
@@ -161,6 +177,8 @@ class ChatState {
       syncStatus: ChatSyncStatus.localOnly,
       latestCtas: const [],
       quickSuggestions: defaultChatSuggestions,
+      lastResponseUsedFallback: false,
+      lastResponseWasRepaired: false,
     );
   }
 
@@ -237,7 +255,13 @@ class ChatController extends StateNotifier<ChatState> {
         );
         remoteConversations = [created];
       }
-      final sorted = _sortConversations(remoteConversations);
+      final merged = cached == null
+          ? remoteConversations
+          : _mergeConversations(
+              localConversations: cached.conversations,
+              remoteConversations: remoteConversations,
+            );
+      final sorted = _sortConversations(merged);
       final activeId = _resolveActiveConversationId(
         sorted,
         state.activeConversationId,
@@ -249,6 +273,7 @@ class ChatController extends StateNotifier<ChatState> {
         latestRisk: _riskFromConversation(selected),
         isHydrated: true,
         syncStatus: ChatSyncStatus.synced,
+        lastSyncedAt: DateTime.now(),
         clearError: true,
         clearRetryContext: true,
       );
@@ -349,6 +374,7 @@ class ChatController extends StateNotifier<ChatState> {
       activeConversationId: conversation.id,
       latestRisk: _riskFromConversation(conversation),
       syncStatus: syncStatus,
+      lastSyncedAt: syncStatus == ChatSyncStatus.synced ? DateTime.now() : null,
       errorMessage: errorMessage,
       clearError: true,
       clearRetryContext: true,
@@ -565,9 +591,13 @@ class ChatController extends StateNotifier<ChatState> {
         responseMode: reply.responseMode,
         situationType: reply.situationType,
         conversationContext: reply.conversationContext,
+        lastResponseUsedFallback:
+            reply.servedFromFallback || reply.backendFallbackUsed,
+        lastResponseWasRepaired: reply.validationRepaired,
         syncStatus: reply.servedFromFallback
             ? ChatSyncStatus.offline
             : ChatSyncStatus.synced,
+        lastSyncedAt: reply.servedFromFallback ? null : DateTime.now(),
         errorMessage: reply.servedFromFallback
             ? 'Sem conexao com o backend agora. Usei uma resposta local segura.'
             : null,
@@ -606,6 +636,47 @@ class ChatController extends StateNotifier<ChatState> {
         .map((item) => item.id == targetId ? updated : item)
         .toList(growable: false);
     return _sortConversations(items);
+  }
+
+  List<ConversationModel> _mergeConversations({
+    required List<ConversationModel> localConversations,
+    required List<ConversationModel> remoteConversations,
+  }) {
+    final byId = <String, ConversationModel>{
+      for (final conversation in localConversations)
+        conversation.id: conversation,
+    };
+
+    for (final remote in remoteConversations) {
+      final local = byId[remote.id];
+      byId[remote.id] = local == null
+          ? remote
+          : _resolveConversationConflict(local: local, remote: remote);
+    }
+
+    return byId.values.toList(growable: false);
+  }
+
+  ConversationModel _resolveConversationConflict({
+    required ConversationModel local,
+    required ConversationModel remote,
+  }) {
+    if (local.updatedAt.isAfter(remote.updatedAt) &&
+        local.messages.length >= remote.messages.length) {
+      return local;
+    }
+    if (remote.messages.length >= local.messages.length) {
+      return remote;
+    }
+
+    return local.copyWith(
+      lastRiskLevel: remote.lastRiskLevel.index > local.lastRiskLevel.index
+          ? remote.lastRiskLevel
+          : local.lastRiskLevel,
+      updatedAt: local.updatedAt.isAfter(remote.updatedAt)
+          ? local.updatedAt
+          : remote.updatedAt,
+    );
   }
 
   List<ConversationModel> _sortConversations(

@@ -145,6 +145,8 @@ class ChatMessageResponseDto {
     this.responseMode,
     this.situationType,
     this.conversationContext,
+    this.fallbackUsed = false,
+    this.validationRepaired = false,
   });
 
   final String conversationId;
@@ -155,6 +157,8 @@ class ChatMessageResponseDto {
   final String? responseMode;
   final String? situationType;
   final Map<String, dynamic>? conversationContext;
+  final bool fallbackUsed;
+  final bool validationRepaired;
 
   factory ChatMessageResponseDto.fromJson(Map<String, dynamic> json) {
     return ChatMessageResponseDto(
@@ -174,6 +178,12 @@ class ChatMessageResponseDto {
       conversationContext: json['conversation_context'] == null
           ? null
           : Map<String, dynamic>.from(json['conversation_context'] as Map),
+      fallbackUsed: json['fallback_used'] as bool? ??
+          json['fallbackUsed'] as bool? ??
+          false,
+      validationRepaired: json['validation_repaired'] as bool? ??
+          json['validationRepaired'] as bool? ??
+          false,
     );
   }
 
@@ -187,6 +197,8 @@ class ChatMessageResponseDto {
       responseMode: responseMode,
       situationType: situationType,
       conversationContext: conversationContext,
+      backendFallbackUsed: fallbackUsed,
+      validationRepaired: validationRepaired,
     );
   }
 }

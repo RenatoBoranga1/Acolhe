@@ -50,3 +50,5 @@ class ChatMessageResponse(BaseModel):
     response_mode: str | None = None
     situation_type: str | None = None
     conversation_context: dict | None = None
+    fallback_used: bool = False
+    validation_repaired: bool = False
