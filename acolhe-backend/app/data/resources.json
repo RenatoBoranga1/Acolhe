@@ -1,0 +1,34 @@
+{
+  "articles": [
+    {
+      "slug": "o-que-pode-caracterizar-assedio",
+      "locale": "pt-BR",
+      "category": "informacao-geral",
+      "title": "O que pode caracterizar assedio sexual",
+      "summary": "Sinais gerais para refletir sobre comportamentos invasivos, insistentes ou coercitivos.",
+      "body": "Assedio pode envolver comentarios sexuais insistentes, toques sem consentimento, constrangimento, chantagem, perseguicao ou pressao para interacoes intimas. Nem toda situacao vai ser igual, e a avaliacao pode variar conforme o contexto e a localidade. Se quiser, o app pode te ajudar a organizar os fatos sem te pressionar a tomar uma decisao imediata.",
+      "cta_label": "Organizar os fatos",
+      "cta_kind": "journal"
+    },
+    {
+      "slug": "preservar-evidencias",
+      "locale": "pt-BR",
+      "category": "protecao",
+      "title": "Preservar evidencias com cuidado",
+      "summary": "Orientacoes gerais para guardar mensagens, prints, nomes, datas e outros elementos relevantes.",
+      "body": "Se for seguro para voce, pode ser util guardar mensagens, prints, nomes de testemunhas, datas aproximadas, locais e efeitos percebidos da situacao. Isso nao precisa ser feito de uma vez. O objetivo e te ajudar a manter um registro pessoal, sem transformar isso automaticamente em denuncia.",
+      "cta_label": "Registrar agora",
+      "cta_kind": "journal"
+    },
+    {
+      "slug": "apoio-humano-e-canais",
+      "locale": "pt-BR",
+      "category": "apoio",
+      "title": "Buscar apoio humano qualificado",
+      "summary": "Diferencas entre acolhimento, atendimento psicologico, orientacao juridica e apoio policial.",
+      "body": "O acolhimento inicial pode ajudar a reduzir o isolamento e organizar os proximos passos, mas nao substitui acompanhamento profissional. Dependendo da necessidade, voce pode considerar apoio psicologico, juridico, medico, institucional ou policial. Em risco imediato, procure emergencia local ou uma pessoa de confianca.",
+      "cta_label": "Ver rede de apoio",
+      "cta_kind": "support"
+    }
+  ]
+}

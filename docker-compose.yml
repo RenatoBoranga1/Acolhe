@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ./acolhe-backend
+    container_name: acolhe-api
+    env_file:
+      - .env.example
+    environment:
+      DATABASE_URL: postgresql+psycopg://acolhe:acolhe@postgres:5432/acolhe
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16
+    container_name: acolhe-postgres
+    environment:
+      POSTGRES_DB: acolhe
+      POSTGRES_USER: acolhe
+      POSTGRES_PASSWORD: acolhe
+    ports:
+      - "5432:5432"
+    volumes:
+      - acolhe-postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: acolhe-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  acolhe-postgres-data:

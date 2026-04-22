@@ -1,0 +1,52 @@
+{
+  "trusted_contacts": [
+    {
+      "name": "Camila Andrade",
+      "relationship": "Amiga",
+      "phone": "+55 11 99999-1001",
+      "email": "camila@example.com",
+      "priority": 1,
+      "ready_message": "Oi, preciso do seu apoio. Passei por uma situacao dificil e gostaria de conversar com voce."
+    },
+    {
+      "name": "Luciana Reis",
+      "relationship": "Irma",
+      "phone": "+55 11 98888-2211",
+      "email": "luciana@example.com",
+      "priority": 2,
+      "ready_message": "Oi, queria te pedir ajuda para hoje. Estou abalada e gostaria de ficar perto de alguem de confianca."
+    }
+  ],
+  "safety_plan": {
+    "safe_locations": ["Casa da Camila", "Recepcao do predio comercial", "Farmacia 24h da avenida"],
+    "warning_signs": ["Mensagens insistentes", "Esperar na saida", "Mudanca repentina de tom para ameaca"],
+    "immediate_steps": ["Ir para um local movimentado", "Avisar uma pessoa de confianca", "Evitar ficar sozinha no trajeto"],
+    "priority_contacts": ["Camila Andrade", "Luciana Reis"],
+    "personal_notes": "Se eu me sentir travada, posso copiar e enviar a mensagem pronta sem explicar tudo.",
+    "emergency_checklist": ["Celular carregado", "Contato favorito fixado", "Rota alternativa salva"]
+  },
+  "sample_conversation": [
+    {
+      "role": "assistant",
+      "content": "Posso oferecer acolhimento inicial e orientacao geral. Nao substituo apoio psicologico, juridico, medico ou policial. Se houver risco imediato, procure ajuda de emergencia ou uma pessoa de confianca.",
+      "risk_level": "low",
+      "message_metadata": {
+        "kind": "welcome"
+      }
+    },
+    {
+      "role": "user",
+      "content": "Nao sei se o que aconteceu comigo foi assedio.",
+      "risk_level": "moderate",
+      "message_metadata": {}
+    },
+    {
+      "role": "assistant",
+      "content": "Posso te ajudar a olhar para isso com cuidado, sem julgamentos. Voce pode me contar apenas o que se sentir confortavel em compartilhar. Se quiser, tambem posso te ajudar a organizar os fatos ou pensar em proximos passos com seguranca.",
+      "risk_level": "moderate",
+      "message_metadata": {
+        "kind": "example"
+      }
+    }
+  ]
+}

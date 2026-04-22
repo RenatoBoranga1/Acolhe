@@ -1,0 +1,58 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+key.properties
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.db
+*.sqlite
+*.sqlite3
+
+# Flutter and Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+coverage/
+
+# Android and Gradle
+.gradle/
+local.properties
+**/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+captures/
+.cxx/
+
+# IDE and OS
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs and generated archives
+*.log
+*.tmp
+*.zip
+*.tar
+*.tar.gz
+*.hprof
