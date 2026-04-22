@@ -3,9 +3,20 @@ import 'dart:async';
 import 'package:acolhe_mobile/core/storage/secure_storage_service.dart';
 import 'package:acolhe_mobile/core/storage/storage_keys.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
-import 'package:acolhe_mobile/features/chat/data/demo_ai_service.dart';
+import 'package:acolhe_mobile/features/chat/data/chat_repository.dart';
 import 'package:acolhe_mobile/shared/models/app_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+enum ChatSyncStatus { localOnly, syncing, synced, offline }
+
+extension ChatSyncStatusX on ChatSyncStatus {
+  String get label => switch (this) {
+        ChatSyncStatus.localOnly => 'Modo local',
+        ChatSyncStatus.syncing => 'Sincronizando',
+        ChatSyncStatus.synced => 'Backend conectado',
+        ChatSyncStatus.offline => 'Cache offline',
+      };
+}
 
 class PendingResponseContext {
   const PendingResponseContext({
@@ -26,8 +37,14 @@ class ChatState {
     required this.isTyping,
     required this.latestRisk,
     required this.isHydrated,
+    required this.syncStatus,
+    required this.latestCtas,
+    required this.quickSuggestions,
     this.errorMessage,
     this.retryContext,
+    this.responseMode,
+    this.situationType,
+    this.conversationContext,
   });
 
   final List<ConversationModel> conversations;
@@ -35,8 +52,14 @@ class ChatState {
   final bool isTyping;
   final RiskAssessment latestRisk;
   final bool isHydrated;
+  final ChatSyncStatus syncStatus;
+  final List<String> latestCtas;
+  final List<String> quickSuggestions;
   final String? errorMessage;
   final PendingResponseContext? retryContext;
+  final String? responseMode;
+  final String? situationType;
+  final Map<String, dynamic>? conversationContext;
 
   bool get hasRetryAvailable => retryContext != null;
 
@@ -53,10 +76,17 @@ class ChatState {
     bool? isTyping,
     RiskAssessment? latestRisk,
     bool? isHydrated,
+    ChatSyncStatus? syncStatus,
+    List<String>? latestCtas,
+    List<String>? quickSuggestions,
     String? errorMessage,
     bool clearError = false,
     PendingResponseContext? retryContext,
     bool clearRetryContext = false,
+    String? responseMode,
+    String? situationType,
+    Map<String, dynamic>? conversationContext,
+    bool clearResponseMetadata = false,
   }) {
     return ChatState(
       conversations: conversations ?? this.conversations,
@@ -64,8 +94,19 @@ class ChatState {
       isTyping: isTyping ?? this.isTyping,
       latestRisk: latestRisk ?? this.latestRisk,
       isHydrated: isHydrated ?? this.isHydrated,
+      syncStatus: syncStatus ?? this.syncStatus,
+      latestCtas: latestCtas ?? this.latestCtas,
+      quickSuggestions: quickSuggestions ?? this.quickSuggestions,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      retryContext: clearRetryContext ? null : retryContext ?? this.retryContext,
+      retryContext:
+          clearRetryContext ? null : retryContext ?? this.retryContext,
+      responseMode:
+          clearResponseMetadata ? null : responseMode ?? this.responseMode,
+      situationType:
+          clearResponseMetadata ? null : situationType ?? this.situationType,
+      conversationContext: clearResponseMetadata
+          ? null
+          : conversationContext ?? this.conversationContext,
     );
   }
 
@@ -117,41 +158,89 @@ class ChatState {
         requiresImmediateAction: false,
       ),
       isHydrated: false,
+      syncStatus: ChatSyncStatus.localOnly,
+      latestCtas: const [],
+      quickSuggestions: defaultChatSuggestions,
     );
   }
+
+  static const defaultChatSuggestions = [
+    'Nao sei por onde comecar',
+    'Quero entender se isso foi assedio',
+    'Estou com medo',
+    'Quero registrar o que aconteceu',
+    'Quero pensar nos proximos passos',
+    'Quero ajuda para falar com alguem de confianca',
+  ];
 }
 
-final demoAiServiceProvider = Provider<DemoAiService>((ref) => const DemoAiService());
-
-final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>((ref) {
+final chatControllerProvider =
+    StateNotifierProvider<ChatController, ChatState>((ref) {
   return ChatController(
     ref.read(secureStorageProvider),
-    ref.read(demoAiServiceProvider),
+    ref.read(chatRepositoryProvider),
     ref,
   );
 });
 
 class ChatController extends StateNotifier<ChatState> {
-  ChatController(this._storage, this._service, this._ref) : super(ChatState.initial()) {
+  ChatController(this._storage, this._repository, this._ref)
+      : super(ChatState.initial()) {
     unawaited(load());
   }
 
   final SecureStorageService _storage;
-  final DemoAiService _service;
+  final ChatRepository _repository;
   final Ref _ref;
 
   Future<void> load() async {
-    final storedSession = await _storage.readMap(StorageKeys.chatSession);
-    if (storedSession != null &&
-        storedSession['conversations'] is List &&
-        (storedSession['conversations'] as List).isNotEmpty) {
-      final conversations = (storedSession['conversations'] as List<dynamic>)
-          .map((item) => ConversationModel.fromJson(Map<String, dynamic>.from(item as Map)))
-          .toList();
-      final sorted = _sortConversations(conversations);
+    final cached = await _readCachedSession();
+    if (cached != null) {
+      final selected = cached.conversations.firstWhere(
+        (item) => item.id == cached.activeConversationId,
+      );
+      state = state.copyWith(
+        conversations: cached.conversations,
+        activeConversationId: selected.id,
+        latestRisk: _riskFromConversation(selected),
+        isHydrated: true,
+        syncStatus: _repository.isRemoteEnabled
+            ? ChatSyncStatus.syncing
+            : ChatSyncStatus.localOnly,
+        clearError: true,
+        clearRetryContext: true,
+      );
+    }
+
+    if (_repository.isRemoteEnabled) {
+      await _loadRemoteConversations(cached);
+      return;
+    }
+
+    if (cached != null) {
+      return;
+    }
+
+    state =
+        state.copyWith(isHydrated: true, syncStatus: ChatSyncStatus.localOnly);
+    await persist();
+  }
+
+  Future<void> _loadRemoteConversations(_CachedChatSession? cached) async {
+    try {
+      var remoteConversations = await _repository.listConversations();
+      if (remoteConversations.isEmpty) {
+        final discreetMode = _ref.read(authControllerProvider).discreetMode;
+        final created = await _repository.createConversation(
+          title: _defaultConversationTitle(discreetMode),
+          discreetMode: discreetMode,
+        );
+        remoteConversations = [created];
+      }
+      final sorted = _sortConversations(remoteConversations);
       final activeId = _resolveActiveConversationId(
         sorted,
-        storedSession['activeConversationId'] as String?,
+        state.activeConversationId,
       );
       final selected = sorted.firstWhere((item) => item.id == activeId);
       state = state.copyWith(
@@ -159,33 +248,51 @@ class ChatController extends StateNotifier<ChatState> {
         activeConversationId: selected.id,
         latestRisk: _riskFromConversation(selected),
         isHydrated: true,
-        clearError: true,
-        clearRetryContext: true,
-      );
-      return;
-    }
-
-    final legacyConversations = await _storage.readList(StorageKeys.chatState);
-    if (legacyConversations.isNotEmpty) {
-      final parsed = legacyConversations
-          .map((item) => ConversationModel.fromJson(item))
-          .toList(growable: false);
-      final sorted = _sortConversations(parsed);
-      final first = sorted.first;
-      state = state.copyWith(
-        conversations: sorted,
-        activeConversationId: first.id,
-        latestRisk: _riskFromConversation(first),
-        isHydrated: true,
+        syncStatus: ChatSyncStatus.synced,
         clearError: true,
         clearRetryContext: true,
       );
       await persist();
       return;
+    } catch (_) {
+      state = state.copyWith(
+        isHydrated: true,
+        syncStatus: ChatSyncStatus.offline,
+        errorMessage: cached == null
+            ? 'Nao consegui conectar ao backend agora. O chat continua disponivel em modo local seguro.'
+            : 'Nao consegui atualizar pelo backend agora. Mostrando o cache local deste aparelho.',
+      );
+    }
+  }
+
+  Future<_CachedChatSession?> _readCachedSession() async {
+    final storedSession = await _storage.readMap(StorageKeys.chatSession);
+    if (storedSession != null &&
+        storedSession['conversations'] is List &&
+        (storedSession['conversations'] as List).isNotEmpty) {
+      final conversations = (storedSession['conversations'] as List<dynamic>)
+          .map((item) => ConversationModel.fromJson(
+              Map<String, dynamic>.from(item as Map)))
+          .toList();
+      final sorted = _sortConversations(conversations);
+      final activeId = _resolveActiveConversationId(
+        sorted,
+        storedSession['activeConversationId'] as String?,
+      );
+      return _CachedChatSession(
+          conversations: sorted, activeConversationId: activeId);
     }
 
-    state = state.copyWith(isHydrated: true);
-    await persist();
+    final legacyConversations = await _storage.readList(StorageKeys.chatState);
+    if (legacyConversations.isEmpty) {
+      return null;
+    }
+    final parsed = legacyConversations
+        .map((item) => ConversationModel.fromJson(item))
+        .toList(growable: false);
+    final sorted = _sortConversations(parsed);
+    return _CachedChatSession(
+        conversations: sorted, activeConversationId: sorted.first.id);
   }
 
   Future<void> persist() async {
@@ -205,24 +312,51 @@ class ChatController extends StateNotifier<ChatState> {
     if (!exists) {
       return;
     }
-    final selected = state.conversations.firstWhere((item) => item.id == conversationId);
+    final selected =
+        state.conversations.firstWhere((item) => item.id == conversationId);
     state = state.copyWith(
       activeConversationId: conversationId,
       latestRisk: _riskFromConversation(selected),
+      latestCtas: const [],
       clearError: true,
+      clearResponseMetadata: true,
     );
     await persist();
   }
 
   Future<void> newConversation() async {
-    final conversation = _createBlankConversation();
+    final discreetMode = _ref.read(authControllerProvider).discreetMode;
+    var syncStatus = state.syncStatus;
+    String? errorMessage;
+    var conversation = _createBlankConversation();
+
+    if (_repository.isRemoteEnabled) {
+      try {
+        conversation = await _repository.createConversation(
+          title: _defaultConversationTitle(discreetMode),
+          discreetMode: discreetMode,
+        );
+        syncStatus = ChatSyncStatus.synced;
+      } catch (_) {
+        syncStatus = ChatSyncStatus.offline;
+        errorMessage =
+            'Nao consegui criar a conversa no backend agora. Criei uma conversa local segura.';
+      }
+    }
+
     state = state.copyWith(
       conversations: _sortConversations([conversation, ...state.conversations]),
       activeConversationId: conversation.id,
       latestRisk: _riskFromConversation(conversation),
+      syncStatus: syncStatus,
+      errorMessage: errorMessage,
       clearError: true,
       clearRetryContext: true,
+      clearResponseMetadata: true,
     );
+    if (errorMessage != null) {
+      state = state.copyWith(errorMessage: errorMessage);
+    }
     await persist();
   }
 
@@ -235,7 +369,8 @@ class ChatController extends StateNotifier<ChatState> {
       if (conversation.id != conversationId) {
         return conversation;
       }
-      return conversation.copyWith(title: normalized, updatedAt: DateTime.now());
+      return conversation.copyWith(
+          title: normalized, updatedAt: DateTime.now());
     }).toList(growable: false);
     state = state.copyWith(conversations: _sortConversations(updated));
     await persist();
@@ -252,8 +387,10 @@ class ChatController extends StateNotifier<ChatState> {
         conversations: [fallback],
         activeConversationId: fallback.id,
         latestRisk: _riskFromConversation(fallback),
+        latestCtas: const [],
         clearError: true,
         clearRetryContext: true,
+        clearResponseMetadata: true,
       );
       await persist();
       return;
@@ -263,13 +400,16 @@ class ChatController extends StateNotifier<ChatState> {
     final activeId = state.activeConversationId == conversationId
         ? sorted.first.id
         : _resolveActiveConversationId(sorted, state.activeConversationId);
-    final active = sorted.firstWhere((conversation) => conversation.id == activeId);
+    final active =
+        sorted.firstWhere((conversation) => conversation.id == activeId);
     state = state.copyWith(
       conversations: sorted,
       activeConversationId: activeId,
       latestRisk: _riskFromConversation(active),
+      latestCtas: const [],
       clearError: true,
       clearRetryContext: state.retryContext?.conversationId == conversationId,
+      clearResponseMetadata: true,
     );
     await persist();
   }
@@ -285,8 +425,10 @@ class ChatController extends StateNotifier<ChatState> {
     state = state.copyWith(
       conversations: _replaceConversation(resetConversation),
       latestRisk: _riskFromConversation(resetConversation),
+      latestCtas: const [],
       clearError: true,
       clearRetryContext: true,
+      clearResponseMetadata: true,
     );
     await persist();
   }
@@ -322,6 +464,9 @@ class ChatController extends StateNotifier<ChatState> {
       conversations: _replaceConversation(optimisticConversation),
       activeConversationId: optimisticConversation.id,
       isTyping: true,
+      syncStatus: _repository.isRemoteEnabled
+          ? ChatSyncStatus.syncing
+          : ChatSyncStatus.localOnly,
       clearError: true,
       retryContext: PendingResponseContext(
         conversationId: optimisticConversation.id,
@@ -369,9 +514,16 @@ class ChatController extends StateNotifier<ChatState> {
     required List<ChatMessageModel> history,
   }) async {
     try {
-      final reply = await _service
-          .sendMessage(text: prompt, history: history)
-          .timeout(const Duration(seconds: 20));
+      final reply = await _repository
+          .sendMessage(
+            conversationId: conversationId,
+            message: prompt,
+            discreetMode: state.conversations
+                .firstWhere((conversation) => conversation.id == conversationId)
+                .discreetMode,
+            history: history,
+          )
+          .timeout(const Duration(seconds: 28));
 
       final hasConversation = state.conversations.any(
         (conversation) => conversation.id == conversationId,
@@ -388,49 +540,76 @@ class ChatController extends StateNotifier<ChatState> {
         (conversation) => conversation.id == conversationId,
       );
       final completed = updatedConversation.copyWith(
+        id: reply.conversationId,
         lastRiskLevel: reply.risk.level,
-        messages: [...updatedConversation.messages, reply.message],
+        messages: [...updatedConversation.messages, reply.assistantMessage],
         updatedAt: DateTime.now(),
       );
 
-      final latestRisk = state.activeConversationId == conversationId
-          ? reply.risk
-          : state.latestRisk;
+      final isActiveConversation = state.activeConversationId == conversationId;
+      final latestRisk = isActiveConversation ? reply.risk : state.latestRisk;
+      final activeConversationId = isActiveConversation
+          ? reply.conversationId
+          : state.activeConversationId;
 
       state = state.copyWith(
-        conversations: _replaceConversation(completed),
+        conversations:
+            _replaceConversation(completed, previousId: conversationId),
+        activeConversationId: activeConversationId,
         isTyping: false,
         latestRisk: latestRisk,
-        clearError: true,
+        latestCtas: reply.ctas,
+        quickSuggestions: reply.suggestions.isEmpty
+            ? ChatState.defaultChatSuggestions
+            : reply.suggestions,
+        responseMode: reply.responseMode,
+        situationType: reply.situationType,
+        conversationContext: reply.conversationContext,
+        syncStatus: reply.servedFromFallback
+            ? ChatSyncStatus.offline
+            : ChatSyncStatus.synced,
+        errorMessage: reply.servedFromFallback
+            ? 'Sem conexao com o backend agora. Usei uma resposta local segura.'
+            : null,
+        clearError: !reply.servedFromFallback,
         clearRetryContext: true,
       );
       await persist();
     } on TimeoutException {
       state = state.copyWith(
         isTyping: false,
+        syncStatus: ChatSyncStatus.offline,
         errorMessage:
             'A resposta demorou mais do que o esperado. Quando voce quiser, tente novamente.',
       );
     } catch (_) {
       state = state.copyWith(
         isTyping: false,
+        syncStatus: ChatSyncStatus.offline,
         errorMessage:
             'Nao consegui responder agora. Sua mensagem continua salva e voce pode tentar de novo.',
       );
     }
   }
 
-  List<ConversationModel> _replaceConversation(ConversationModel updated) {
-    if (!state.conversations.any((item) => item.id == updated.id)) {
+  List<ConversationModel> _replaceConversation(
+    ConversationModel updated, {
+    String? previousId,
+  }) {
+    final targetId = previousId ?? updated.id;
+    if (!state.conversations
+        .any((item) => item.id == targetId || item.id == updated.id)) {
       return _sortConversations([updated, ...state.conversations]);
     }
     final items = state.conversations
-        .map((item) => item.id == updated.id ? updated : item)
+        .where((item) => item.id != updated.id || item.id == targetId)
+        .map((item) => item.id == targetId ? updated : item)
         .toList(growable: false);
     return _sortConversations(items);
   }
 
-  List<ConversationModel> _sortConversations(List<ConversationModel> conversations) {
+  List<ConversationModel> _sortConversations(
+      List<ConversationModel> conversations) {
     final sorted = [...conversations];
     sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return sorted;
@@ -465,8 +644,10 @@ class ChatController extends StateNotifier<ChatState> {
     return discreetMode ? 'Espaco privado' : 'Nova conversa';
   }
 
-  String _deriveConversationTitle(ConversationModel conversation, String prompt) {
-    if (!_isGenericConversationTitle(conversation.title) || conversation.messages.isNotEmpty) {
+  String _deriveConversationTitle(
+      ConversationModel conversation, String prompt) {
+    if (!_isGenericConversationTitle(conversation.title) ||
+        conversation.messages.isNotEmpty) {
       return conversation.title;
     }
 
@@ -505,7 +686,18 @@ class ChatController extends StateNotifier<ChatState> {
               'Organizar fatos com calma',
               'Escolher proximos passos quando fizer sentido',
             ],
-      requiresImmediateAction: conversation.lastRiskLevel.index >= RiskLevel.high.index,
+      requiresImmediateAction:
+          conversation.lastRiskLevel.index >= RiskLevel.high.index,
     );
   }
+}
+
+class _CachedChatSession {
+  const _CachedChatSession({
+    required this.conversations,
+    required this.activeConversationId,
+  });
+
+  final List<ConversationModel> conversations;
+  final String activeConversationId;
 }

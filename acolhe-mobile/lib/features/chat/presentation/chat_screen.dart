@@ -103,7 +103,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(titleController.text.trim()),
+            onPressed: () =>
+                Navigator.of(context).pop(titleController.text.trim()),
             child: const Text('Salvar'),
           ),
         ],
@@ -121,7 +122,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
   }
 
-  Future<void> _confirmDeleteConversation(ConversationModel conversation) async {
+  Future<void> _confirmDeleteConversation(
+      ConversationModel conversation) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -147,7 +149,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
 
     if (confirmed == true) {
-      await ref.read(chatControllerProvider.notifier).deleteConversation(conversation.id);
+      await ref
+          .read(chatControllerProvider.notifier)
+          .deleteConversation(conversation.id);
     }
   }
 
@@ -176,7 +180,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         '${conversation.id}:${conversation.messages.length}:${chat.isTyping}:${chat.errorMessage ?? ''}';
     final canSend = !chat.isTyping && _messageController.text.trim().isNotEmpty;
 
-    if (_lastScrollSignature != scrollSignature && (hasMessages || chat.isTyping)) {
+    if (_lastScrollSignature != scrollSignature &&
+        (hasMessages || chat.isTyping)) {
       _lastScrollSignature = scrollSignature;
       _scheduleScrollToBottom(animated: true);
     }
@@ -195,7 +200,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ref.read(chatControllerProvider.notifier).newConversation();
                 },
                 onSelectConversation: (id) async {
-                  await ref.read(chatControllerProvider.notifier).switchConversation(id);
+                  await ref
+                      .read(chatControllerProvider.notifier)
+                      .switchConversation(id);
                   if (mounted) {
                     Navigator.of(context).pop();
                   }
@@ -215,8 +222,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: theme.brightness == Brightness.dark
-                ? const [Color(0xFF0D141A), Color(0xFF14202A), Color(0xFF0D141A)]
-                : const [Color(0xFFF4EEE7), Color(0xFFF3F6F7), Color(0xFFF7F1EB)],
+                ? const [
+                    Color(0xFF0D141A),
+                    Color(0xFF14202A),
+                    Color(0xFF0D141A)
+                  ]
+                : const [
+                    Color(0xFFF4EEE7),
+                    Color(0xFFF3F6F7),
+                    Color(0xFFF7F1EB)
+                  ],
           ),
         ),
         child: SafeArea(
@@ -230,10 +245,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     activeConversationId: conversation.id,
                     conversations: chat.conversations,
                     onNewConversation: () {
-                      ref.read(chatControllerProvider.notifier).newConversation();
+                      ref
+                          .read(chatControllerProvider.notifier)
+                          .newConversation();
                     },
                     onSelectConversation: (id) {
-                      ref.read(chatControllerProvider.notifier).switchConversation(id);
+                      ref
+                          .read(chatControllerProvider.notifier)
+                          .switchConversation(id);
                     },
                     onRenameConversation: (conversation) {
                       _showRenameDialog(conversation);
@@ -254,10 +273,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ? 'Espaco protegido com historico local e apoio inicial.'
                           : 'Assistente de acolhimento inicial, orientacao segura e historico local protegido.',
                       risk: chat.latestRisk,
+                      syncStatus: chat.syncStatus,
                       isWideLayout: isWideLayout,
                       onOpenMenu: () => _scaffoldKey.currentState?.openDrawer(),
                       onNewConversation: () {
-                        ref.read(chatControllerProvider.notifier).newConversation();
+                        ref
+                            .read(chatControllerProvider.notifier)
+                            .newConversation();
                       },
                       onQuickExit: _openQuickExit,
                     ),
@@ -271,21 +293,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             switchInCurve: Curves.easeOutCubic,
                             switchOutCurve: Curves.easeInCubic,
                             child: !chat.isHydrated
-                                ? const Center(child: CircularProgressIndicator())
+                                ? const Center(
+                                    child: CircularProgressIndicator())
                                 : hasMessages
                                     ? _ConversationView(
-                                        key: ValueKey('conversation-${conversation.id}'),
+                                        key: ValueKey(
+                                            'conversation-${conversation.id}'),
                                         conversation: conversation,
                                         risk: chat.latestRisk,
+                                        ctas: chat.latestCtas,
                                         isTyping: chat.isTyping,
                                         scrollController: _scrollController,
                                       )
                                     : ChatEmptyState(
-                                        key: ValueKey('empty-${conversation.id}'),
+                                        key: ValueKey(
+                                            'empty-${conversation.id}'),
                                         title: 'Como voce quer comecar?',
                                         subtitle:
                                             'Voce pode escrever do seu jeito ou usar um atalho. Esta conversa fica salva apenas neste aparelho.',
-                                        suggestions: _quickSuggestions,
+                                        suggestions:
+                                            chat.quickSuggestions.isEmpty
+                                                ? _quickSuggestions
+                                                : chat.quickSuggestions,
                                         onSuggestionTap: _submitMessage,
                                       ),
                           ),
@@ -319,7 +348,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               errorMessage: chat.errorMessage,
                               onRetry: chat.hasRetryAvailable
                                   ? () {
-                                      ref.read(chatControllerProvider.notifier).retryLastResponse();
+                                      ref
+                                          .read(chatControllerProvider.notifier)
+                                          .retryLastResponse();
                                     }
                                   : null,
                               onSend: _submitMessage,
@@ -345,6 +376,7 @@ class _ChatHeader extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.risk,
+    required this.syncStatus,
     required this.isWideLayout,
     required this.onOpenMenu,
     required this.onNewConversation,
@@ -355,6 +387,7 @@ class _ChatHeader extends StatelessWidget {
   final String title;
   final String subtitle;
   final RiskAssessment risk;
+  final ChatSyncStatus syncStatus;
   final bool isWideLayout;
   final VoidCallback onOpenMenu;
   final VoidCallback onNewConversation;
@@ -364,7 +397,8 @@ class _ChatHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: EdgeInsets.fromLTRB(isWideLayout ? 32 : 16, 18, isWideLayout ? 32 : 16, 18),
+      padding: EdgeInsets.fromLTRB(
+          isWideLayout ? 32 : 16, 18, isWideLayout ? 32 : 16, 18),
       decoration: BoxDecoration(
         color: theme.brightness == Brightness.dark
             ? const Color(0xFF10171D).withOpacity(0.92)
@@ -390,7 +424,8 @@ class _ChatHeader extends StatelessWidget {
                 ),
               if (!isWideLayout) const SizedBox(width: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(18),
@@ -437,6 +472,15 @@ class _ChatHeader extends StatelessWidget {
                   RiskLevel.high => AcolheTheme.rose,
                   RiskLevel.critical => const Color(0xFFD98585),
                 },
+              ),
+              _HeaderInfoChip(
+                icon: syncStatus == ChatSyncStatus.synced
+                    ? Icons.cloud_done_outlined
+                    : Icons.cloud_off_outlined,
+                label: syncStatus.label,
+                tone: syncStatus == ChatSyncStatus.synced
+                    ? AcolheTheme.forest
+                    : AcolheTheme.clay,
               ),
             ],
           ),
@@ -489,6 +533,7 @@ class _ConversationView extends StatelessWidget {
   const _ConversationView({
     required this.conversation,
     required this.risk,
+    required this.ctas,
     required this.isTyping,
     required this.scrollController,
     super.key,
@@ -496,6 +541,7 @@ class _ConversationView extends StatelessWidget {
 
   final ConversationModel conversation;
   final RiskAssessment risk;
+  final List<String> ctas;
   final bool isTyping;
   final ScrollController scrollController;
 
@@ -516,9 +562,35 @@ class _ConversationView extends StatelessWidget {
             RiskBanner(risk: risk),
             const SizedBox(height: 12),
           ],
+          if (ctas.isNotEmpty) ...[
+            _ConversationCtas(ctas: ctas),
+            const SizedBox(height: 12),
+          ],
         ],
-        for (final message in conversation.messages) ChatBubble(message: message),
+        for (final message in conversation.messages)
+          ChatBubble(message: message),
         if (isTyping) const TypingIndicatorBubble(),
+      ],
+    );
+  }
+}
+
+class _ConversationCtas extends StatelessWidget {
+  const _ConversationCtas({required this.ctas});
+
+  final List<String> ctas;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (final cta in ctas)
+          Chip(
+            avatar: const Icon(Icons.touch_app_outlined, size: 16),
+            label: Text(cta),
+          ),
       ],
     );
   }
@@ -584,7 +656,8 @@ class _ChatSidebar extends StatelessWidget {
               Expanded(
                 child: ListView.separated(
                   itemCount: conversations.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final conversation = conversations[index];
                     return ConversationHistoryTile(

@@ -25,6 +25,8 @@ Base atual do projeto:
 Decisao de produto aplicada:
 
 - o chat passou a ser o centro da experiencia autenticada;
+- o fluxo principal do chat usa o backend FastAPI em `/api/v1/chat` quando `API_BASE_URL` esta configurado;
+- o fallback local existe apenas para desenvolvimento/offline, mantendo uma resposta segura se a API falhar;
 - o historico de conversas ficou persistido localmente com conversa ativa salva;
 - a interface principal foi reorganizada como workspace com sidebar/drawer, historico, mensagens, empty state e composer fixo;
 - os outros modulos continuam acessiveis pela navegacao lateral, preservando a base funcional existente.
@@ -56,7 +58,7 @@ powershell -ExecutionPolicy Bypass -File .\flutter-local.ps1 devices
 powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId SEU_DEVICE_ID
 ```
 
-Se quiser rodar so com os mocks locais, nao informe `ApiBaseUrl`.
+Se quiser rodar em modo local/offline, nao informe `ApiBaseUrl`.
 Se quiser conectar ao backend no seu computador, use o IP da sua maquina na mesma rede Wi-Fi, e nao `localhost`:
 
 ```bash
@@ -70,6 +72,12 @@ powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId R9YT12345 -A
 ```
 
 Importante: `SEU_DEVICE_ID` e `SEU_IP_LOCAL` sao placeholders. Nao use `<` e `>` no comando.
+
+Com `API_BASE_URL`, o app consome os endpoints reais do backend:
+
+- `GET /api/v1/chat/conversations`
+- `POST /api/v1/chat/conversations`
+- `POST /api/v1/chat/message`
 
 ## Android Studio
 

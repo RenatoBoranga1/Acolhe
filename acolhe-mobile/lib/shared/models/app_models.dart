@@ -11,8 +11,19 @@ extension RiskLevelX on RiskLevel {
       };
 
   static RiskLevel fromLabel(String value) {
+    final normalized = value.toLowerCase().trim();
+    final englishLabels = {
+      'low': RiskLevel.low,
+      'moderate': RiskLevel.moderate,
+      'medium': RiskLevel.moderate,
+      'high': RiskLevel.high,
+      'critical': RiskLevel.critical,
+    };
+    if (englishLabels.containsKey(normalized)) {
+      return englishLabels[normalized]!;
+    }
     return RiskLevel.values.firstWhere(
-      (item) => item.label == value.toLowerCase(),
+      (item) => item.label == normalized,
       orElse: () => RiskLevel.low,
     );
   }
@@ -50,7 +61,9 @@ class RiskAssessment {
         score: (json['score'] as num?)?.toInt() ?? 0,
         reasons: List<String>.from(json['reasons'] as List? ?? const []),
         actions: List<String>.from(
-          (json['actions'] as List?) ?? (json['recommended_actions'] as List?) ?? const [],
+          (json['actions'] as List?) ??
+              (json['recommended_actions'] as List?) ??
+              const [],
         ),
         requiresImmediateAction: json['requiresImmediateAction'] as bool? ??
             json['requires_immediate_action'] as bool? ??
@@ -81,14 +94,20 @@ class ChatMessageModel {
         'createdAt': createdAt.toIso8601String(),
       };
 
-  factory ChatMessageModel.fromJson(Map<String, dynamic> json) => ChatMessageModel(
+  factory ChatMessageModel.fromJson(Map<String, dynamic> json) =>
+      ChatMessageModel(
         id: json['id'] as String,
-        role: (json['role'] as String) == 'user' ? MessageRole.user : MessageRole.assistant,
+        role: (json['role'] as String) == 'user'
+            ? MessageRole.user
+            : MessageRole.assistant,
         content: json['content'] as String,
         riskLevel: RiskLevelX.fromLabel(
-          (json['riskLevel'] as String?) ?? (json['risk_level'] as String?) ?? 'baixo',
+          (json['riskLevel'] as String?) ??
+              (json['risk_level'] as String?) ??
+              'baixo',
         ),
-        createdAt: DateTime.parse(json['createdAt'] as String? ?? json['created_at'] as String),
+        createdAt: DateTime.parse(
+            json['createdAt'] as String? ?? json['created_at'] as String),
       );
 }
 
@@ -156,22 +175,32 @@ class ConversationModel {
         'updatedAt': updatedAt.toIso8601String(),
       };
 
-  factory ConversationModel.fromJson(Map<String, dynamic> json) => ConversationModel(
+  factory ConversationModel.fromJson(Map<String, dynamic> json) =>
+      ConversationModel(
         id: json['id'] as String,
         title: json['title'] as String,
         lastRiskLevel: RiskLevelX.fromLabel(
-          (json['lastRiskLevel'] as String?) ?? (json['last_risk_level'] as String?) ?? 'baixo',
+          (json['lastRiskLevel'] as String?) ??
+              (json['last_risk_level'] as String?) ??
+              'baixo',
         ),
-        discreetMode: json['discreetMode'] as bool? ?? json['discreet_mode'] as bool? ?? false,
+        discreetMode: json['discreetMode'] as bool? ??
+            json['discreet_mode'] as bool? ??
+            false,
         messages: (json['messages'] as List<dynamic>? ?? const [])
-            .map((item) => ChatMessageModel.fromJson(Map<String, dynamic>.from(item as Map)))
+            .map((item) => ChatMessageModel.fromJson(
+                Map<String, dynamic>.from(item as Map)))
             .toList(),
         createdAt: DateTime.tryParse(
-              (json['createdAt'] as String?) ?? (json['created_at'] as String?) ?? '',
+              (json['createdAt'] as String?) ??
+                  (json['created_at'] as String?) ??
+                  '',
             ) ??
             DateTime.now(),
         updatedAt: DateTime.tryParse(
-              (json['updatedAt'] as String?) ?? (json['updated_at'] as String?) ?? '',
+              (json['updatedAt'] as String?) ??
+                  (json['updated_at'] as String?) ??
+                  '',
             ) ??
             DateTime.now(),
       );
@@ -232,17 +261,25 @@ class IncidentRecordModel {
         'summary': summary,
       };
 
-  factory IncidentRecordModel.fromJson(Map<String, dynamic> json) => IncidentRecordModel(
+  factory IncidentRecordModel.fromJson(Map<String, dynamic> json) =>
+      IncidentRecordModel(
         id: json['id'] as String,
-        occurredOn: (json['occurredOn'] as String?) ?? (json['occurred_on'] as String?) ?? '',
-        occurredAt: (json['occurredAt'] as String?) ?? (json['occurred_at'] as String?) ?? '',
+        occurredOn: (json['occurredOn'] as String?) ??
+            (json['occurred_on'] as String?) ??
+            '',
+        occurredAt: (json['occurredAt'] as String?) ??
+            (json['occurred_at'] as String?) ??
+            '',
         location: (json['location'] as String?) ?? '',
         description: json['description'] as String,
         peopleInvolved: List<String>.from(
-          (json['peopleInvolved'] as List?) ?? (json['people_involved'] as List?) ?? const [],
+          (json['peopleInvolved'] as List?) ??
+              (json['people_involved'] as List?) ??
+              const [],
         ),
         witnesses: List<String>.from(json['witnesses'] as List? ?? const []),
-        attachments: List<String>.from(json['attachments'] as List? ?? const []),
+        attachments:
+            List<String>.from(json['attachments'] as List? ?? const []),
         observations: (json['observations'] as String?) ?? '',
         perceivedImpacts: List<String>.from(
           (json['perceivedImpacts'] as List?) ??
@@ -298,20 +335,31 @@ class SafetyPlanModel {
         'emergencyChecklist': emergencyChecklist,
       };
 
-  factory SafetyPlanModel.fromJson(Map<String, dynamic> json) => SafetyPlanModel(
+  factory SafetyPlanModel.fromJson(Map<String, dynamic> json) =>
+      SafetyPlanModel(
         safeLocations: List<String>.from(
-          (json['safeLocations'] as List?) ?? (json['safe_locations'] as List?) ?? const [],
+          (json['safeLocations'] as List?) ??
+              (json['safe_locations'] as List?) ??
+              const [],
         ),
         warningSigns: List<String>.from(
-          (json['warningSigns'] as List?) ?? (json['warning_signs'] as List?) ?? const [],
+          (json['warningSigns'] as List?) ??
+              (json['warning_signs'] as List?) ??
+              const [],
         ),
         immediateSteps: List<String>.from(
-          (json['immediateSteps'] as List?) ?? (json['immediate_steps'] as List?) ?? const [],
+          (json['immediateSteps'] as List?) ??
+              (json['immediate_steps'] as List?) ??
+              const [],
         ),
         priorityContacts: List<String>.from(
-          (json['priorityContacts'] as List?) ?? (json['priority_contacts'] as List?) ?? const [],
+          (json['priorityContacts'] as List?) ??
+              (json['priority_contacts'] as List?) ??
+              const [],
         ),
-        personalNotes: (json['personalNotes'] as String?) ?? (json['personal_notes'] as String?) ?? '',
+        personalNotes: (json['personalNotes'] as String?) ??
+            (json['personal_notes'] as String?) ??
+            '',
         emergencyChecklist: List<String>.from(
           (json['emergencyChecklist'] as List?) ??
               (json['emergency_checklist'] as List?) ??
@@ -349,14 +397,17 @@ class TrustedContactModel {
         'readyMessage': readyMessage,
       };
 
-  factory TrustedContactModel.fromJson(Map<String, dynamic> json) => TrustedContactModel(
+  factory TrustedContactModel.fromJson(Map<String, dynamic> json) =>
+      TrustedContactModel(
         id: json['id'] as String,
         name: json['name'] as String,
         relationship: json['relationship'] as String,
         phone: (json['phone'] as String?) ?? '',
         email: (json['email'] as String?) ?? '',
         priority: (json['priority'] as num?)?.toInt() ?? 1,
-        readyMessage: (json['readyMessage'] as String?) ?? (json['ready_message'] as String?) ?? '',
+        readyMessage: (json['readyMessage'] as String?) ??
+            (json['ready_message'] as String?) ??
+            '',
       );
 }
 
@@ -379,14 +430,17 @@ class ResourceArticleModel {
   final String body;
   final String ctaLabel;
 
-  factory ResourceArticleModel.fromJson(Map<String, dynamic> json) => ResourceArticleModel(
+  factory ResourceArticleModel.fromJson(Map<String, dynamic> json) =>
+      ResourceArticleModel(
         id: (json['id'] as String?) ?? generateId(),
         slug: json['slug'] as String,
         category: json['category'] as String,
         title: json['title'] as String,
         summary: json['summary'] as String,
         body: json['body'] as String,
-        ctaLabel: (json['ctaLabel'] as String?) ?? (json['cta_label'] as String?) ?? '',
+        ctaLabel: (json['ctaLabel'] as String?) ??
+            (json['cta_label'] as String?) ??
+            '',
       );
 }
 
@@ -491,7 +545,8 @@ class AuthStateModel {
 List<Map<String, dynamic>> encodeConversations(List<ConversationModel> items) =>
     items.map((item) => item.toJson()).toList();
 
-String prettyJoin(List<String> items) => items.where((item) => item.trim().isNotEmpty).join(', ');
+String prettyJoin(List<String> items) =>
+    items.where((item) => item.trim().isNotEmpty).join(', ');
 
 String encodeListText(List<String> items) => items.join('\n');
 

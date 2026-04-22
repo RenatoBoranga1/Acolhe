@@ -72,7 +72,8 @@ Exemplo:
 --dart-define=API_BASE_URL=http://192.168.0.15:8000
 ```
 
-Se voce nao informar `API_BASE_URL`, o app roda com mocks locais.
+Se voce nao informar `API_BASE_URL`, o app roda em modo local/offline com fallback seguro.
+Com `API_BASE_URL`, o chat usa o backend FastAPI real em `/api/v1/chat`.
 
 ## 7. Se o botao Run nao aparecer
 
