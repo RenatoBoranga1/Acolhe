@@ -1,6 +1,5 @@
 import 'package:acolhe_mobile/main.dart';
 import 'package:acolhe_mobile/core/storage/secure_storage_service.dart';
-import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 

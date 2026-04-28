@@ -1,4 +1,5 @@
 import 'package:acolhe_mobile/core/config/app_identity.dart';
+import 'package:acolhe_mobile/core/config/backend_config.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/features/chat/application/chat_controller.dart';
 import 'package:acolhe_mobile/features/journal/application/journal_controller.dart';
@@ -17,9 +18,11 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
+    final backend = ref.watch(backendConfigProvider);
     return AppShell(
       title: 'Configuracoes e privacidade',
-      subtitle: 'Discricao, bloqueio local e limpeza rapida de dados.',
+      subtitle:
+          'Discricao, bloqueio local, conexao do celular e limpeza rapida.',
       maxContentWidth: 1160,
       child: AdaptiveTwoPane(
         primary: GlassCard(
@@ -99,19 +102,37 @@ class SettingsScreen extends ConsumerWidget {
         ),
         secondary: Column(
           children: [
-            const GlassCard(
+            GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SectionTitle(
-                    title: 'Privacidade no tablet',
+                  const SectionTitle(
+                    title: 'Conexao no celular',
                     subtitle:
-                        'A interface foi ajustada para telas maiores com largura controlada, cards em grade e formularios divididos em colunas.',
+                        'Use esta area para apontar o app para o backend real quando estiver em um telefone ou tablet na mesma rede do seu computador.',
+                  ),
+                  const SizedBox(height: 10),
+                  StatusNoticeBanner(
+                    message: backend.usesRemoteApi
+                        ? 'Endereco atual: ${backend.effectiveBaseUrl}'
+                        : 'Sem backend remoto configurado. O app continua em modo local seguro.',
+                    icon: backend.usesRemoteApi
+                        ? Icons.wifi_tethering_rounded
+                        : Icons.cloud_off_outlined,
+                    tone: backend.usesRemoteApi
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.secondary,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 18),
+            AppButton.secondary(
+              label: 'Configurar backend do celular',
+              icon: Icons.settings_ethernet_rounded,
+              onPressed: () => context.push('/backend-connection'),
+            ),
+            const SizedBox(height: 12),
             AppButton.secondary(
               label: 'Limpar conversa atual',
               onPressed: () => ref
@@ -132,6 +153,7 @@ class SettingsScreen extends ConsumerWidget {
                 ref.invalidate(journalControllerProvider);
                 ref.invalidate(safetyPlanControllerProvider);
                 ref.invalidate(supportNetworkControllerProvider);
+                ref.invalidate(backendConfigProvider);
                 if (!context.mounted) {
                   return;
                 }
@@ -142,6 +164,164 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class BackendConnectionScreen extends ConsumerStatefulWidget {
+  const BackendConnectionScreen({super.key});
+
+  @override
+  ConsumerState<BackendConnectionScreen> createState() =>
+      _BackendConnectionScreenState();
+}
+
+class _BackendConnectionScreenState
+    extends ConsumerState<BackendConnectionScreen> {
+  final TextEditingController _urlController = TextEditingController();
+  bool _syncedInitialValue = false;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final backend = ref.watch(backendConfigProvider);
+    if (!_syncedInitialValue && !backend.isLoading) {
+      _syncedInitialValue = true;
+      _urlController.text = backend.usesCustomUrl
+          ? backend.customBaseUrl
+          : backend.effectiveBaseUrl;
+    }
+
+    final rawValue = _urlController.text.trim();
+    final loopbackWarning = _looksLikeLoopback(rawValue);
+    final theme = Theme.of(context);
+
+    return AppShell(
+      title: 'Conexao do backend',
+      subtitle: 'Deixe o celular apontar para a API real sem recompilar o app.',
+      maxContentWidth: 760,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SectionTitle(
+                  title: 'URL usada pelo celular',
+                  subtitle:
+                      'Se o backend estiver no seu computador, use o IP da maquina na mesma rede Wi-Fi. Exemplo: http://192.168.0.15:8000',
+                ),
+                const SizedBox(height: 12),
+                AppTextField(
+                  controller: _urlController,
+                  label: 'URL do backend',
+                  hint: 'http://192.168.0.15:8000',
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 12),
+                StatusNoticeBanner(
+                  message: backend.usesRemoteApi
+                      ? 'Endereco ativo: ${backend.effectiveBaseUrl}'
+                      : 'Nenhum backend remoto ativo. O chat usa o fallback local seguro.',
+                  icon: backend.usesRemoteApi
+                      ? Icons.cloud_done_outlined
+                      : Icons.cloud_off_outlined,
+                  tone: backend.usesRemoteApi
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.secondary,
+                ),
+                if (loopbackWarning) ...[
+                  const SizedBox(height: 12),
+                  StatusNoticeBanner(
+                    message:
+                        'Em celular fisico, nao use localhost, 127.0.0.1 ou 0.0.0.0. Use o IP do seu computador na rede.',
+                    icon: Icons.warning_amber_rounded,
+                    tone: theme.colorScheme.error,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                const Text(
+                  'Dica: o backend precisa subir em 0.0.0.0 para ficar visivel na rede local.',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          AdaptiveTwoPane(
+            breakpoint: 680,
+            primary: AppButton.primary(
+              label: _saving ? 'Salvando...' : 'Salvar e reconectar chat',
+              onPressed: _saving
+                  ? null
+                  : () async {
+                      setState(() => _saving = true);
+                      await ref
+                          .read(backendConfigProvider.notifier)
+                          .saveOverride(_urlController.text);
+                      ref.invalidate(chatControllerProvider);
+                      if (!mounted) {
+                        return;
+                      }
+                      setState(() => _saving = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Configuracao salva. O chat vai usar a nova URL.'),
+                        ),
+                      );
+                    },
+            ),
+            secondary: Column(
+              children: [
+                AppButton.secondary(
+                  label: 'Limpar URL personalizada',
+                  onPressed: _saving
+                      ? null
+                      : () async {
+                          setState(() => _saving = true);
+                          _urlController.clear();
+                          await ref
+                              .read(backendConfigProvider.notifier)
+                              .clearOverride();
+                          ref.invalidate(chatControllerProvider);
+                          if (!mounted) {
+                            return;
+                          }
+                          setState(() => _saving = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'URL personalizada removida. O app voltou ao modo padrao.'),
+                            ),
+                          );
+                        },
+                ),
+                const SizedBox(height: 12),
+                AppButton.secondary(
+                  label: 'Abrir chat',
+                  onPressed: () => context.go('/chat'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _looksLikeLoopback(String value) {
+    if (value.isEmpty) {
+      return false;
+    }
+    final normalized = value.startsWith('http') ? value : 'http://$value';
+    final host = Uri.tryParse(normalized)?.host.toLowerCase() ?? '';
+    return host == 'localhost' || host == '127.0.0.1' || host == '0.0.0.0';
   }
 }
 

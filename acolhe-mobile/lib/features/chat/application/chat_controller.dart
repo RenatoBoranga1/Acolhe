@@ -196,7 +196,7 @@ final chatControllerProvider =
     StateNotifierProvider<ChatController, ChatState>((ref) {
   return ChatController(
     ref.read(secureStorageProvider),
-    ref.read(chatRepositoryProvider),
+    ref.watch(chatRepositoryProvider),
     ref,
   );
 });

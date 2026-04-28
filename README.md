@@ -86,7 +86,7 @@ Ou, se preferir o comando direto:
 
 ```bash
 cd acolhe-backend
-& "C:\Users\USER\Documents\Playground\tools\python-3.11.9-embed-amd64\python.exe" -m uvicorn app.main:app --reload
+& "C:\Users\USER\Documents\Playground\tools\python-3.11.9-embed-amd64\python.exe" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Ou pelo script, que neste ambiente sobe sem `reload` por padrao:
@@ -94,6 +94,8 @@ Ou pelo script, que neste ambiente sobe sem `reload` por padrao:
 ```bash
 powershell -ExecutionPolicy Bypass -File .\start-backend.ps1
 ```
+
+Para acessar pelo celular fisico, use o IP da sua maquina na mesma rede Wi-Fi dentro do app ou no `run-tablet.ps1`. Nao use `localhost`.
 
 Para rodar testes:
 

@@ -67,6 +67,19 @@ Se quiser conectar ao backend no seu computador, use o IP da sua maquina na mesm
 powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId SEU_DEVICE_ID -ApiBaseUrl http://SEU_IP_LOCAL:8000
 ```
 
+Se voce ja instalou o app no celular, tambem pode configurar isso dentro do proprio aplicativo:
+
+- abra `Configuracoes e privacidade`;
+- toque em `Configurar backend do celular`;
+- informe algo como `http://192.168.0.15:8000`;
+- salve e volte ao chat.
+
+Importante para celular fisico:
+
+- nao use `localhost`, `127.0.0.1` ou `0.0.0.0` na URL do app;
+- suba o backend no computador com `powershell -ExecutionPolicy Bypass -File .\start-backend.ps1`;
+- o celular e o computador precisam estar na mesma rede Wi-Fi.
+
 Exemplo:
 
 ```bash

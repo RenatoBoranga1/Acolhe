@@ -1,6 +1,6 @@
 param(
   [switch]$Reload,
-  [string]$Host = "127.0.0.1",
+  [string]$Host = "0.0.0.0",
   [int]$Port = 8000
 )
 

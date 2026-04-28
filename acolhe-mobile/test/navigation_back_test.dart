@@ -1,5 +1,4 @@
 import 'package:acolhe_mobile/core/storage/secure_storage_service.dart';
-import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/shared/widgets/app_shell.dart';
 import 'package:acolhe_mobile/shared/widgets/design_system.dart';
 import 'package:flutter/material.dart';

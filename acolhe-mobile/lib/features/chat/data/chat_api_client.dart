@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:acolhe_mobile/core/config/app_environment.dart';
+import 'package:acolhe_mobile/core/config/backend_config.dart';
 import 'package:acolhe_mobile/features/chat/data/chat_dtos.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -13,7 +14,12 @@ final chatHttpClientProvider = Provider<http.Client>((ref) {
 });
 
 final chatApiClientProvider = Provider<ChatApiClient>((ref) {
-  return ChatApiClient(ref.read(chatHttpClientProvider));
+  final effectiveBaseUrl = ref
+      .watch(backendConfigProvider.select((state) => state.effectiveBaseUrl));
+  return ChatApiClient(
+    ref.read(chatHttpClientProvider),
+    apiBaseUrl: effectiveBaseUrl,
+  );
 });
 
 class ChatApiException implements Exception {

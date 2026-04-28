@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:acolhe_mobile/core/storage/secure_storage_service.dart';
 import 'package:acolhe_mobile/core/storage/storage_keys.dart';
-import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/shared/models/app_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

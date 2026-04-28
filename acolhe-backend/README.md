@@ -19,10 +19,12 @@ copy ..\\.env.example .env
 powershell -ExecutionPolicy Bypass -File ..\\start-backend.ps1
 ```
 
+Por padrao, o script agora sobe o backend em `0.0.0.0:8000`, o que permite acesso por celular ou tablet na mesma rede local.
+
 Comando direto equivalente:
 
 ```bash
-& "C:\Users\USER\Documents\Playground\tools\python-3.11.9-embed-amd64\python.exe" -m uvicorn app.main:app
+& "C:\Users\USER\Documents\Playground\tools\python-3.11.9-embed-amd64\python.exe" -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ## Rodar com Docker

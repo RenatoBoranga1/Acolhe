@@ -1,6 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+final secureStorageProvider =
+    Provider<SecureStorageService>((ref) => const SecureStorageService());
 
 class SecureStorageService {
   const SecureStorageService();

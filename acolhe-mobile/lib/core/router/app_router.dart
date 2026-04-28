@@ -45,6 +45,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           path: '/settings',
           builder: (context, state) => const SettingsScreen()),
       GoRoute(
+          path: '/backend-connection',
+          builder: (context, state) => const BackendConnectionScreen()),
+      GoRoute(
           path: '/privacy', builder: (context, state) => const PrivacyScreen()),
     ],
   );
