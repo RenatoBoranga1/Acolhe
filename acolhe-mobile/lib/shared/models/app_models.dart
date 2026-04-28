@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:acolhe_mobile/core/config/app_identity.dart';
+
 enum RiskLevel { low, moderate, high, critical }
 
 extension RiskLevelX on RiskLevel {
@@ -471,7 +473,7 @@ class AuthStateModel {
   final bool quickExitEnabled;
   final bool privacyShield;
 
-  String get currentAppName => discreetMode ? aliasName : 'Acolhe';
+  String get currentAppName => AppIdentity.appName;
 
   AuthStateModel copyWith({
     bool? isLoading,
@@ -521,7 +523,7 @@ class AuthStateModel {
         biometricsEnabled: false,
         discreetMode: false,
         autoLockMinutes: 5,
-        aliasName: 'Aurora',
+        aliasName: AppIdentity.appName,
         notificationsHidden: true,
         quickExitEnabled: true,
         privacyShield: false,
@@ -535,7 +537,9 @@ class AuthStateModel {
         biometricsEnabled: json['biometricsEnabled'] as bool? ?? false,
         discreetMode: json['discreetMode'] as bool? ?? false,
         autoLockMinutes: (json['autoLockMinutes'] as num?)?.toInt() ?? 5,
-        aliasName: (json['aliasName'] as String?) ?? 'Aurora',
+        aliasName: (json['aliasName'] as String?) == 'Aurora'
+            ? AppIdentity.appName
+            : (json['aliasName'] as String?) ?? AppIdentity.appName,
         notificationsHidden: json['notificationsHidden'] as bool? ?? true,
         quickExitEnabled: json['quickExitEnabled'] as bool? ?? true,
         privacyShield: false,

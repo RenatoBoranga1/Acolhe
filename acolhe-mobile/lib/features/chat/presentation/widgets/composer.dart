@@ -9,8 +9,10 @@ class ChatComposer extends StatelessWidget {
     required this.canSend,
     required this.isBusy,
     required this.onSend,
+    required this.maxWidth,
     super.key,
     this.errorMessage,
+    this.keyboardInset = 0,
     this.onRetry,
   });
 
@@ -18,6 +20,8 @@ class ChatComposer extends StatelessWidget {
   final FocusNode focusNode;
   final bool canSend;
   final bool isBusy;
+  final double maxWidth;
+  final double keyboardInset;
   final String? errorMessage;
   final VoidCallback? onRetry;
   final VoidCallback onSend;
@@ -38,19 +42,24 @@ class ChatComposer extends StatelessWidget {
       },
       child: SafeArea(
         top: false,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 980),
-            child: ChatComposerBar(
-              controller: controller,
-              focusNode: focusNode,
-              canSend: canSend,
-              inputEnabled: true,
-              isBusy: isBusy,
-              errorMessage: errorMessage,
-              onRetry: onRetry,
-              onSend: onSend,
+        child: AnimatedPadding(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.only(bottom: keyboardInset > 0 ? 8 : 0),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: ChatComposerBar(
+                controller: controller,
+                focusNode: focusNode,
+                canSend: canSend,
+                inputEnabled: true,
+                isBusy: isBusy,
+                errorMessage: errorMessage,
+                onRetry: onRetry,
+                onSend: onSend,
+              ),
             ),
           ),
         ),

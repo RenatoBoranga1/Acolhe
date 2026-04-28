@@ -14,19 +14,38 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     routes: [
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
-      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
-      GoRoute(path: '/pin-setup', builder: (context, state) => const PinSetupScreen()),
+      GoRoute(
+          path: '/onboarding',
+          builder: (context, state) => const OnboardingScreen()),
+      GoRoute(
+          path: '/pin-setup',
+          builder: (context, state) => const PinSetupScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
-      GoRoute(path: '/urgent-help', builder: (context, state) => const UrgentHelpScreen()),
-      GoRoute(path: '/incident-record', builder: (context, state) => const IncidentRecordScreen()),
-      GoRoute(path: '/incident-summary', builder: (context, state) => const IncidentSummaryScreen()),
-      GoRoute(path: '/safety-plan', builder: (context, state) => const SafetyPlanScreen()),
-      GoRoute(path: '/support-network', builder: (context, state) => const SupportNetworkScreen()),
-      GoRoute(path: '/resources', builder: (context, state) => const ResourcesScreen()),
-      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
-      GoRoute(path: '/privacy', builder: (context, state) => const PrivacyScreen()),
+      GoRoute(
+          path: '/urgent-help',
+          builder: (context, state) => const UrgentHelpScreen()),
+      GoRoute(
+          path: '/incident-record',
+          builder: (context, state) => const IncidentRecordScreen()),
+      GoRoute(
+          path: '/incident-summary',
+          builder: (context, state) => const IncidentSummaryScreen()),
+      GoRoute(
+          path: '/safety-plan',
+          builder: (context, state) => const SafetyPlanScreen()),
+      GoRoute(
+          path: '/support-network',
+          builder: (context, state) => const SupportNetworkScreen()),
+      GoRoute(
+          path: '/resources',
+          builder: (context, state) => const ResourcesScreen()),
+      GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen()),
+      GoRoute(
+          path: '/privacy', builder: (context, state) => const PrivacyScreen()),
     ],
   );
 });

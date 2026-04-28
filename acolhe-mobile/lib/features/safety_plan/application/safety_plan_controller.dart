@@ -17,9 +17,13 @@ class SafetyPlanController extends StateNotifier<SafetyPlanModel> {
           const SafetyPlanModel(
             safeLocations: ['Casa da Camila', 'Recepcao do predio'],
             warningSigns: ['Mensagens insistentes', 'Esperar na saida'],
-            immediateSteps: ['Ir para um local movimentado', 'Ligar para uma pessoa de confianca'],
+            immediateSteps: [
+              'Ir para um local movimentado',
+              'Ligar para uma pessoa de confianca'
+            ],
             priorityContacts: ['Camila Andrade', 'Luciana Reis'],
-            personalNotes: 'Se eu travar, posso enviar a mensagem pronta sem explicar tudo.',
+            personalNotes:
+                'Se eu travar, posso enviar a mensagem pronta sem explicar tudo.',
             emergencyChecklist: ['Celular carregado', 'Rota alternativa salva'],
           ),
         ) {

@@ -2,31 +2,97 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+class AppBreakpoints {
+  const AppBreakpoints._();
+
+  static const double mobileMax = 600;
+  static const double tabletMax = 1024;
+  static const double compactTwoPaneMin = 760;
+  static const double inlineSidebarMin = 860;
+  static const double desktopMin = 1025;
+  static const double expandedMin = 1440;
+}
+
+enum AppViewport { mobile, tablet, desktop }
+
 class AppResponsive {
-  static bool isTabletWidth(double width) => width >= 720;
+  const AppResponsive._();
 
-  static bool isTwoPaneWidth(double width) => width >= 960;
+  static AppViewport viewportFor(double width) {
+    if (width <= AppBreakpoints.mobileMax) {
+      return AppViewport.mobile;
+    }
+    if (width <= AppBreakpoints.tabletMax) {
+      return AppViewport.tablet;
+    }
+    return AppViewport.desktop;
+  }
 
-  static bool isExpandedWidth(double width) => width >= 1280;
+  static bool isMobileWidth(double width) =>
+      viewportFor(width) == AppViewport.mobile;
+
+  static bool isTabletWidth(double width) =>
+      viewportFor(width) == AppViewport.tablet;
+
+  static bool isDesktopWidth(double width) =>
+      viewportFor(width) == AppViewport.desktop;
+
+  static bool isTwoPaneWidth(double width) =>
+      width >= AppBreakpoints.compactTwoPaneMin;
+
+  static bool showsInlineSidebar(double width) =>
+      width >= AppBreakpoints.inlineSidebarMin;
 
   static double horizontalPadding(double width) {
-    if (isExpandedWidth(width)) {
-      return 48;
-    }
-    if (isTabletWidth(width)) {
-      return 32;
-    }
-    return 20;
+    return switch (viewportFor(width)) {
+      AppViewport.mobile => 16,
+      AppViewport.tablet => 28,
+      AppViewport.desktop => width >= AppBreakpoints.expandedMin ? 48 : 36,
+    };
   }
 
   static double shellMaxWidth(double width) {
-    if (isExpandedWidth(width)) {
-      return 1320;
+    return switch (viewportFor(width)) {
+      AppViewport.mobile => width,
+      AppViewport.tablet => 1080,
+      AppViewport.desktop => 1320,
+    };
+  }
+
+  static double chatMaxWidth(double width) {
+    return switch (viewportFor(width)) {
+      AppViewport.mobile => width,
+      AppViewport.tablet => 920,
+      AppViewport.desktop => 980,
+    };
+  }
+
+  static double chatSidebarWidth(double width) {
+    if (width >= AppBreakpoints.desktopMin) {
+      return 344;
     }
-    if (isTabletWidth(width)) {
-      return 1080;
-    }
-    return width;
+    return 292;
+  }
+}
+
+class ResponsiveLayout extends StatelessWidget {
+  const ResponsiveLayout({
+    required this.builder,
+    super.key,
+  });
+
+  final Widget Function(BuildContext context, AppViewport viewport) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return builder(
+          context,
+          AppResponsive.viewportFor(constraints.maxWidth),
+        );
+      },
+    );
   }
 }
 
@@ -35,7 +101,7 @@ class AdaptiveTwoPane extends StatelessWidget {
     required this.primary,
     required this.secondary,
     super.key,
-    this.breakpoint = 960,
+    this.breakpoint = AppBreakpoints.compactTwoPaneMin,
     this.spacing = 20,
     this.primaryFlex = 6,
     this.secondaryFlex = 5,

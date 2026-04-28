@@ -8,7 +8,8 @@ final resourcesProvider = Provider<List<ResourceArticleModel>>((ref) {
       slug: 'o-que-pode-caracterizar-assedio',
       category: 'Informacao geral',
       title: 'O que pode caracterizar assedio sexual',
-      summary: 'Sinais gerais para refletir sobre comportamentos invasivos, insistentes ou coercitivos.',
+      summary:
+          'Sinais gerais para refletir sobre comportamentos invasivos, insistentes ou coercitivos.',
       body:
           'Assedio pode envolver comentarios sexuais insistentes, constrangimento, perseguicao, chantagem ou toques sem consentimento. As situacoes variam conforme o contexto e a localidade.',
       ctaLabel: 'Registrar com calma',
@@ -18,7 +19,8 @@ final resourcesProvider = Provider<List<ResourceArticleModel>>((ref) {
       slug: 'preservar-evidencias',
       category: 'Protecao',
       title: 'Preservar evidencias com cuidado',
-      summary: 'Mensagens, prints, datas, locais e nomes podem ajudar voce a manter um registro pessoal.',
+      summary:
+          'Mensagens, prints, datas, locais e nomes podem ajudar voce a manter um registro pessoal.',
       body:
           'Se for seguro, pode ser util guardar prints, mensagens, datas aproximadas, locais e efeitos percebidos. Isso nao obriga nenhuma denuncia: e um apoio para a sua organizacao pessoal.',
       ctaLabel: 'Abrir registro',
@@ -28,7 +30,8 @@ final resourcesProvider = Provider<List<ResourceArticleModel>>((ref) {
       slug: 'apoio-humano',
       category: 'Apoio',
       title: 'Buscar apoio humano qualificado',
-      summary: 'Acolhimento inicial nao substitui atendimento psicologico, juridico, medico ou policial.',
+      summary:
+          'Acolhimento inicial nao substitui atendimento psicologico, juridico, medico ou policial.',
       body:
           'Dependendo da sua necessidade, voce pode considerar apoio psicologico, juridico, institucional, medico ou policial. Em risco imediato, procure emergencia local ou uma pessoa de confianca.',
       ctaLabel: 'Ver rede de apoio',

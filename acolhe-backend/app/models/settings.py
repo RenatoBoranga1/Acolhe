@@ -13,6 +13,6 @@ class AppSetting(UUIDTimestampMixin, Base):
     quick_exit_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     notifications_hidden: Mapped[bool] = mapped_column(Boolean, default=True)
     discreet_mode: Mapped[bool] = mapped_column(Boolean, default=False)
-    discreet_app_name: Mapped[str] = mapped_column(String(120), default="Aurora")
+    discreet_app_name: Mapped[str] = mapped_column(String(120), default="Acolhe")
     notification_title: Mapped[str] = mapped_column(String(120), default="Nova atualizacao")
     export_format: Mapped[str] = mapped_column(String(20), default="json")

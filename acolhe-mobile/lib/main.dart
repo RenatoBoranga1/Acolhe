@@ -1,3 +1,4 @@
+import 'package:acolhe_mobile/core/config/app_identity.dart';
 import 'package:acolhe_mobile/core/router/app_router.dart';
 import 'package:acolhe_mobile/core/theme/app_theme.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
@@ -17,7 +18,8 @@ class AcolheApp extends ConsumerStatefulWidget {
   ConsumerState<AcolheApp> createState() => _AcolheAppState();
 }
 
-class _AcolheAppState extends ConsumerState<AcolheApp> with WidgetsBindingObserver {
+class _AcolheAppState extends ConsumerState<AcolheApp>
+    with WidgetsBindingObserver {
   DateTime? _backgroundedAt;
 
   @override
@@ -35,7 +37,8 @@ class _AcolheAppState extends ConsumerState<AcolheApp> with WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final controller = ref.read(authControllerProvider.notifier);
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       _backgroundedAt = DateTime.now();
       controller.showPrivacyShield();
       return;
@@ -59,7 +62,7 @@ class _AcolheAppState extends ConsumerState<AcolheApp> with WidgetsBindingObserv
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: auth.currentAppName,
+      title: AppIdentity.appName,
       theme: AcolheTheme.lightTheme,
       darkTheme: AcolheTheme.darkTheme,
       themeMode: ThemeMode.system,

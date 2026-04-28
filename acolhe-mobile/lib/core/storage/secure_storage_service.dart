@@ -7,10 +7,12 @@ class SecureStorageService {
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
+    iOptions: IOSOptions(
+        accessibility: KeychainAccessibility.first_unlock_this_device),
   );
 
-  Future<void> writeString(String key, String value) => _storage.write(key: key, value: value);
+  Future<void> writeString(String key, String value) =>
+      _storage.write(key: key, value: value);
 
   Future<String?> readString(String key) => _storage.read(key: key);
 
@@ -34,7 +36,9 @@ class SecureStorageService {
       return [];
     }
     final decoded = jsonDecode(raw) as List<dynamic>;
-    return decoded.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+    return decoded
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
   }
 
   Future<void> delete(String key) => _storage.delete(key: key);

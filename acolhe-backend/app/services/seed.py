@@ -33,7 +33,7 @@ def ensure_demo_data(session: Session) -> None:
             AppSetting(
                 user_id=user.id,
                 discreet_mode=False,
-                discreet_app_name="Aurora",
+                discreet_app_name="Acolhe",
                 notification_title="Atualizacao segura",
             )
         )

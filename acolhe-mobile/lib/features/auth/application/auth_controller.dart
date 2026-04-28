@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:acolhe_mobile/core/config/app_identity.dart';
 import 'package:acolhe_mobile/core/storage/secure_storage_service.dart';
 import 'package:acolhe_mobile/core/storage/storage_keys.dart';
 import 'package:acolhe_mobile/shared/models/app_models.dart';
@@ -8,8 +9,10 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 
-final secureStorageProvider = Provider<SecureStorageService>((ref) => const SecureStorageService());
-final localAuthProvider = Provider<LocalAuthentication>((ref) => LocalAuthentication());
+final secureStorageProvider =
+    Provider<SecureStorageService>((ref) => const SecureStorageService());
+final localAuthProvider =
+    Provider<LocalAuthentication>((ref) => LocalAuthentication());
 
 final authControllerProvider =
     StateNotifierProvider<AuthController, AuthStateModel>((ref) {
@@ -20,7 +23,8 @@ final authControllerProvider =
 });
 
 class AuthController extends StateNotifier<AuthStateModel> {
-  AuthController(this._storage, this._localAuth) : super(AuthStateModel.initial()) {
+  AuthController(this._storage, this._localAuth)
+      : super(AuthStateModel.initial()) {
     unawaited(load());
   }
 
@@ -33,7 +37,8 @@ class AuthController extends StateNotifier<AuthStateModel> {
     final authMap = await _storage.readMap(StorageKeys.authState);
     final pinHash = await _storage.readString(StorageKeys.pinHash);
     if (authMap == null) {
-      state = AuthStateModel.initial().copyWith(isLoading: false, hasPin: pinHash != null);
+      state = AuthStateModel.initial()
+          .copyWith(isLoading: false, hasPin: pinHash != null);
       return;
     }
     state = AuthStateModel.fromJson(authMap).copyWith(
@@ -43,7 +48,8 @@ class AuthController extends StateNotifier<AuthStateModel> {
     );
   }
 
-  Future<void> _persistState() => _storage.writeMap(StorageKeys.authState, state.toJson());
+  Future<void> _persistState() =>
+      _storage.writeMap(StorageKeys.authState, state.toJson());
 
   Future<void> completeOnboarding({
     required bool discreetMode,
@@ -54,7 +60,7 @@ class AuthController extends StateNotifier<AuthStateModel> {
       onboardingCompleted: true,
       discreetMode: discreetMode,
       biometricsEnabled: biometricsEnabled,
-      aliasName: discreetMode ? 'Aurora' : 'Acolhe',
+      aliasName: AppIdentity.appName,
     );
     await _persistState();
   }
@@ -82,13 +88,15 @@ class AuthController extends StateNotifier<AuthStateModel> {
     if (!state.biometricsEnabled) {
       return false;
     }
-    final available = await _localAuth.canCheckBiometrics || await _localAuth.isDeviceSupported();
+    final available = await _localAuth.canCheckBiometrics ||
+        await _localAuth.isDeviceSupported();
     if (!available) {
       return false;
     }
     final valid = await _localAuth.authenticate(
       localizedReason: 'Desbloqueie com biometria para proteger seu conteudo.',
-      options: const AuthenticationOptions(stickyAuth: true, biometricOnly: false),
+      options:
+          const AuthenticationOptions(stickyAuth: true, biometricOnly: false),
     );
     if (valid) {
       state = state.copyWith(isUnlocked: true, privacyShield: false);

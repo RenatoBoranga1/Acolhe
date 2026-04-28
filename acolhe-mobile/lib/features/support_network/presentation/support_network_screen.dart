@@ -11,7 +11,8 @@ class SupportNetworkScreen extends ConsumerStatefulWidget {
   const SupportNetworkScreen({super.key});
 
   @override
-  ConsumerState<SupportNetworkScreen> createState() => _SupportNetworkScreenState();
+  ConsumerState<SupportNetworkScreen> createState() =>
+      _SupportNetworkScreenState();
 }
 
 class _SupportNetworkScreenState extends ConsumerState<SupportNetworkScreen> {
@@ -19,7 +20,8 @@ class _SupportNetworkScreenState extends ConsumerState<SupportNetworkScreen> {
   final _relationshipController = TextEditingController();
   final _phoneController = TextEditingController();
   final _messageController = TextEditingController(
-    text: 'Oi, preciso do seu apoio. Passei por uma situacao dificil e gostaria de conversar com voce.',
+    text:
+        'Oi, preciso do seu apoio. Passei por uma situacao dificil e gostaria de conversar com voce.',
   );
 
   @override
@@ -49,7 +51,8 @@ class _SupportNetworkScreenState extends ConsumerState<SupportNetworkScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(contact.name, style: Theme.of(context).textTheme.titleMedium),
+                          child: Text(contact.name,
+                              style: Theme.of(context).textTheme.titleMedium),
                         ),
                         Text('Prioridade ${contact.priority}'),
                       ],
@@ -62,7 +65,8 @@ class _SupportNetworkScreenState extends ConsumerState<SupportNetworkScreen> {
                     AppButton.secondary(
                       label: 'Copiar mensagem pronta',
                       onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: contact.readyMessage));
+                        await Clipboard.setData(
+                            ClipboardData(text: contact.readyMessage));
                         if (!mounted) {
                           return;
                         }
@@ -83,7 +87,8 @@ class _SupportNetworkScreenState extends ConsumerState<SupportNetworkScreen> {
             children: [
               AppTextField(controller: _nameController, label: 'Nome'),
               const SizedBox(height: 14),
-              AppTextField(controller: _relationshipController, label: 'Relacao'),
+              AppTextField(
+                  controller: _relationshipController, label: 'Relacao'),
               const SizedBox(height: 14),
               AppTextField(controller: _phoneController, label: 'Telefone'),
               const SizedBox(height: 14),
@@ -96,7 +101,9 @@ class _SupportNetworkScreenState extends ConsumerState<SupportNetworkScreen> {
               AppButton.primary(
                 label: 'Adicionar contato',
                 onPressed: () async {
-                  await ref.read(supportNetworkControllerProvider.notifier).addContact(
+                  await ref
+                      .read(supportNetworkControllerProvider.notifier)
+                      .addContact(
                         TrustedContactModel(
                           id: generateId(),
                           name: _nameController.text.trim(),

@@ -33,7 +33,8 @@ class AcolheTheme {
       scaffoldBackgroundColor: sand,
       dividerColor: const Color(0xFFE6DDD5),
       textTheme: const TextTheme(
-        displaySmall: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.8),
+        displaySmall: TextStyle(
+            fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.8),
         headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
         titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -76,7 +77,8 @@ class AcolheTheme {
         style: IconButton.styleFrom(
           foregroundColor: ink,
           backgroundColor: Colors.white.withOpacity(0.72),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -108,7 +110,8 @@ class AcolheTheme {
       scaffoldBackgroundColor: night,
       dividerColor: const Color(0xFF273645),
       textTheme: const TextTheme(
-        displaySmall: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.8),
+        displaySmall: TextStyle(
+            fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.8),
         headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
         titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -151,7 +154,8 @@ class AcolheTheme {
         style: IconButton.styleFrom(
           foregroundColor: Colors.white,
           backgroundColor: const Color(0xFF17212A),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
       snackBarTheme: SnackBarThemeData(

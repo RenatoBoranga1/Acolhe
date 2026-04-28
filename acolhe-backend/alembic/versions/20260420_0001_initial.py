@@ -111,7 +111,7 @@ def upgrade() -> None:
         sa.Column("quick_exit_enabled", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column("notifications_hidden", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column("discreet_mode", sa.Boolean(), nullable=False, server_default=sa.false()),
-        sa.Column("discreet_app_name", sa.String(length=120), nullable=False, server_default="Aurora"),
+        sa.Column("discreet_app_name", sa.String(length=120), nullable=False, server_default="Acolhe"),
         sa.Column("notification_title", sa.String(length=120), nullable=False, server_default="Nova atualizacao"),
         sa.Column("export_format", sa.String(length=20), nullable=False, server_default="json"),
     )

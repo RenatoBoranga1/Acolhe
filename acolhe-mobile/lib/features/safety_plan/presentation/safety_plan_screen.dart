@@ -106,19 +106,25 @@ class _SafetyPlanScreenState extends ConsumerState<SafetyPlanScreen> {
             onPressed: () async {
               await ref.read(safetyPlanControllerProvider.notifier).save(
                     SafetyPlanModel(
-                      safeLocations: decodeListText(_safeLocationsController.text),
-                      warningSigns: decodeListText(_warningSignsController.text),
-                      immediateSteps: decodeListText(_immediateStepsController.text),
-                      priorityContacts: decodeListText(_priorityContactsController.text),
+                      safeLocations:
+                          decodeListText(_safeLocationsController.text),
+                      warningSigns:
+                          decodeListText(_warningSignsController.text),
+                      immediateSteps:
+                          decodeListText(_immediateStepsController.text),
+                      priorityContacts:
+                          decodeListText(_priorityContactsController.text),
                       personalNotes: _notesController.text.trim(),
-                      emergencyChecklist: decodeListText(_checklistController.text),
+                      emergencyChecklist:
+                          decodeListText(_checklistController.text),
                     ),
                   );
               if (!mounted) {
                 return;
               }
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Plano salvo com seguranca no aparelho.')),
+                const SnackBar(
+                    content: Text('Plano salvo com seguranca no aparelho.')),
               );
             },
           ),

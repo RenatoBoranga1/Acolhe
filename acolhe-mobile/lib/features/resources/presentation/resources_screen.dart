@@ -13,7 +13,8 @@ class ResourcesScreen extends ConsumerWidget {
     final articles = ref.watch(resourcesProvider);
     return AppShell(
       title: 'Informacoes e direitos',
-      subtitle: 'Conteudo geral, claro e pronto para evolucao por pais ou regiao.',
+      subtitle:
+          'Conteudo geral, claro e pronto para evolucao por pais ou regiao.',
       maxContentWidth: 1200,
       child: Column(
         children: [
@@ -32,9 +33,11 @@ class ResourcesScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(article.category, style: Theme.of(context).textTheme.labelLarge),
+                      Text(article.category,
+                          style: Theme.of(context).textTheme.labelLarge),
                       const SizedBox(height: 8),
-                      Text(article.title, style: Theme.of(context).textTheme.titleMedium),
+                      Text(article.title,
+                          style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 10),
                       Text(article.summary),
                       const SizedBox(height: 12),

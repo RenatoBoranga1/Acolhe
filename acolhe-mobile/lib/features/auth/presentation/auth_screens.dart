@@ -94,7 +94,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     return AppShell(
       title: 'Boas-vindas',
-      subtitle: 'Privacidade, acolhimento e clareza sobre limites desde o inicio.',
+      subtitle:
+          'Privacidade, acolhimento e clareza sobre limites desde o inicio.',
       showBack: false,
       maxContentWidth: 1020,
       child: Column(
@@ -112,11 +113,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         'Conversas acolhedoras, registro privado, plano de seguranca e organizacao de proximos passos.',
                   ),
                   SizedBox(height: 16),
-                  Text('A assistente virtual oferece acolhimento inicial e orientacao geral.'),
+                  Text(
+                      'A assistente virtual oferece acolhimento inicial e orientacao geral.'),
                   SizedBox(height: 8),
-                  Text('Ela nao substitui psicologo, advogado, medico, assistente social ou policia.'),
+                  Text(
+                      'Ela nao substitui psicologo, advogado, medico, assistente social ou policia.'),
                   SizedBox(height: 8),
-                  Text('Se houver risco imediato, procure emergencia local ou uma pessoa de confianca.'),
+                  Text(
+                      'Se houver risco imediato, procure emergencia local ou uma pessoa de confianca.'),
                 ],
               ),
             ),
@@ -126,20 +130,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   const SectionTitle(
                     title: 'Protecao por padrao',
-                    subtitle: 'Voce pode ajustar agora e mudar depois nas configuracoes.',
+                    subtitle:
+                        'Voce pode ajustar agora e mudar depois nas configuracoes.',
                   ),
                   const SizedBox(height: 12),
                   SwitchListTile(
                     value: _discreetMode,
                     onChanged: (value) => setState(() => _discreetMode = value),
                     title: const Text('Ativar modo discreto'),
-                    subtitle: const Text('Usa nome alternativo e linguagem mais neutra na interface.'),
+                    subtitle: const Text(
+                        'Mantem a interface mais neutra e discreta.'),
                   ),
                   SwitchListTile(
                     value: _biometrics,
                     onChanged: (value) => setState(() => _biometrics = value),
                     title: const Text('Preparar desbloqueio por biometria'),
-                    subtitle: const Text('Disponivel quando o aparelho suportar.'),
+                    subtitle:
+                        const Text('Disponivel quando o aparelho suportar.'),
                   ),
                 ],
               ),
@@ -149,7 +156,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           AppButton.primary(
             label: 'Continuar com seguranca',
             onPressed: () async {
-              await ref.read(authControllerProvider.notifier).completeOnboarding(
+              await ref
+                  .read(authControllerProvider.notifier)
+                  .completeOnboarding(
                     discreetMode: _discreetMode,
                     biometricsEnabled: _biometrics,
                   );
@@ -215,7 +224,8 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
                   const SizedBox(height: 12),
                   Text(
                     _error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ],
               ],
@@ -228,7 +238,8 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
               final pin = _pinController.text.trim();
               final confirm = _confirmController.text.trim();
               if (pin.length < 4 || pin != confirm) {
-                setState(() => _error = 'Use um PIN de 4 a 8 numeros e confirme corretamente.');
+                setState(() => _error =
+                    'Use um PIN de 4 a 8 numeros e confirme corretamente.');
                 return;
               }
               await ref.read(authControllerProvider.notifier).setupPin(pin);
@@ -293,14 +304,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 12),
                   Text(
                     _error!,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
                 ],
                 const SizedBox(height: 20),
                 AppButton.primary(
                   label: 'Desbloquear',
                   onPressed: () async {
-                    final ok = await ref.read(authControllerProvider.notifier).unlockWithPin(
+                    final ok = await ref
+                        .read(authControllerProvider.notifier)
+                        .unlockWithPin(
                           _pinController.text.trim(),
                         );
                     if (!mounted) {
@@ -319,15 +333,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     label: 'Entrar com biometria',
                     icon: Icons.fingerprint_rounded,
                     onPressed: () async {
-                      final ok =
-                          await ref.read(authControllerProvider.notifier).unlockWithBiometrics();
+                      final ok = await ref
+                          .read(authControllerProvider.notifier)
+                          .unlockWithBiometrics();
                       if (!mounted) {
                         return;
                       }
                       if (ok) {
                         context.go('/chat');
                       } else {
-                        setState(() => _error = 'Biometria indisponivel ou nao confirmada.');
+                        setState(() => _error =
+                            'Biometria indisponivel ou nao confirmada.');
                       }
                     },
                   ),

@@ -35,16 +35,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final FocusNode _composerFocusNode = FocusNode();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _lastScrollSignature = '';
+  double _lastKeyboardInset = 0;
 
   @override
   void initState() {
     super.initState();
     _messageController.addListener(_handleComposerChanged);
+    _composerFocusNode.addListener(_handleComposerFocusChanged);
   }
 
   @override
   void dispose() {
     _messageController.removeListener(_handleComposerChanged);
+    _composerFocusNode.removeListener(_handleComposerFocusChanged);
     _messageController.dispose();
     _scrollController.dispose();
     _composerFocusNode.dispose();
@@ -54,6 +57,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _handleComposerChanged() {
     if (mounted) {
       setState(() {});
+    }
+  }
+
+  void _handleComposerFocusChanged() {
+    if (_composerFocusNode.hasFocus) {
+      _scheduleScrollToBottom(animated: true);
     }
   }
 
@@ -85,6 +94,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _scrollController.jumpTo(offset);
       }
     });
+  }
+
+  double _messageBottomPadding(BuildContext context, double keyboardInset) {
+    final height = MediaQuery.sizeOf(context).height;
+    if (keyboardInset > 0) {
+      return (height * 0.18).clamp(108.0, 156.0);
+    }
+    return 36;
   }
 
   Future<void> _showRenameDialog(ConversationModel conversation) async {
@@ -197,7 +214,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final chat = ref.watch(chatControllerProvider);
     final theme = Theme.of(context);
     final width = MediaQuery.sizeOf(context).width;
-    final isWideLayout = AppResponsive.isTwoPaneWidth(width);
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final isWideLayout = AppResponsive.showsInlineSidebar(width);
+    final chatMaxWidth = AppResponsive.chatMaxWidth(width);
     final conversation = chat.activeConversation;
     final hasMessages = conversation.messages.isNotEmpty;
     final scrollSignature =
@@ -208,6 +227,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         (hasMessages || chat.isTyping)) {
       _lastScrollSignature = scrollSignature;
       _scheduleScrollToBottom(animated: true);
+    }
+    if ((_lastKeyboardInset - keyboardInset).abs() > 1) {
+      final shouldKeepLatestVisible =
+          hasMessages || _composerFocusNode.hasFocus;
+      _lastKeyboardInset = keyboardInset;
+      if (shouldKeepLatestVisible) {
+        _scheduleScrollToBottom(animated: true);
+      }
     }
 
     return Scaffold(
@@ -251,7 +278,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             children: [
               if (isWideLayout)
                 SizedBox(
-                  width: 344,
+                  width: AppResponsive.chatSidebarWidth(width),
                   child: ConversationDrawer(
                     currentRoute: '/chat',
                     activeConversationId: conversation.id,
@@ -287,7 +314,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       child: Align(
                         alignment: Alignment.topCenter,
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 980),
+                          constraints: BoxConstraints(maxWidth: chatMaxWidth),
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 220),
                             switchInCurve: Curves.easeOutCubic,
@@ -314,6 +341,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                             chat.lastResponseWasRepaired,
                                         isTyping: chat.isTyping,
                                         scrollController: _scrollController,
+                                        bottomPadding: _messageBottomPadding(
+                                          context,
+                                          keyboardInset,
+                                        ),
                                         onNavigate: _navigateTo,
                                       )
                                     : ChatEmptyState(
@@ -338,6 +369,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       focusNode: _composerFocusNode,
                       canSend: canSend,
                       isBusy: chat.isTyping,
+                      keyboardInset: keyboardInset,
+                      maxWidth: chatMaxWidth,
                       errorMessage: chat.errorMessage,
                       onRetry: chat.hasRetryAvailable
                           ? () {

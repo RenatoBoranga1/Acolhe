@@ -14,6 +14,7 @@ class MessageList extends StatelessWidget {
     required this.isTyping,
     required this.scrollController,
     required this.onNavigate,
+    required this.bottomPadding,
     super.key,
     this.situationType,
     this.responseMode,
@@ -28,6 +29,7 @@ class MessageList extends StatelessWidget {
   final bool isTyping;
   final ScrollController scrollController;
   final ValueChanged<String> onNavigate;
+  final double bottomPadding;
   final String? situationType;
   final String? responseMode;
   final Map<String, dynamic>? conversationContext;
@@ -41,7 +43,8 @@ class MessageList extends StatelessWidget {
     final localFallback = isLocalFallbackContext(conversationContext);
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.fromLTRB(16, 20, 16, bottomPadding),
       children: [
         if (conversation.messages.isNotEmpty) ...[
           const StatusNoticeBanner(

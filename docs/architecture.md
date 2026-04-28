@@ -37,7 +37,7 @@ O `Acolhe` foi desenhado para separar claramente:
 
 - cards amplos, poucos elementos por tela e linguagem contida;
 - foco em leitura confortavel, contraste e acoes grandes;
-- modo discreto muda nome do app na interface para `Aurora`;
+- modo discreto mantem a interface mais neutra, sem trocar o nome do app;
 - quick exit leva a uma tela neutra e ativa escudo de privacidade.
 
 ## Backend FastAPI

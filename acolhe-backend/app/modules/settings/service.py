@@ -21,13 +21,18 @@ class SettingsService:
             raise ValueError("Usuaria nao encontrada.")
         return user
 
+    def _normalize_app_name(self, value: str | None) -> str:
+        if value == "Aurora" or not value:
+            return "Acolhe"
+        return value
+
     def _serialize(self, setting) -> SettingsResponse:
         return SettingsResponse(
             id=setting.id,
             quick_exit_enabled=setting.quick_exit_enabled,
             notifications_hidden=setting.notifications_hidden,
             discreet_mode=setting.discreet_mode,
-            discreet_app_name=setting.discreet_app_name,
+            discreet_app_name=self._normalize_app_name(setting.discreet_app_name),
             notification_title=setting.notification_title,
             export_format=setting.export_format,
         )
@@ -35,13 +40,23 @@ class SettingsService:
     def get(self, session: Session) -> SettingsResponse:
         user = self._user(session)
         setting = self.settings_repository.get_or_create(session, user.id)
+        normalized_name = self._normalize_app_name(setting.discreet_app_name)
+        if normalized_name != setting.discreet_app_name:
+            setting.discreet_app_name = normalized_name
+            setting = self.settings_repository.save(session, setting)
         return self._serialize(setting)
 
     def update(self, session: Session, payload: SettingsUpdateRequest) -> SettingsResponse:
         user = self._user(session)
         setting = self.settings_repository.get_or_create(session, user.id)
         for key, value in payload.model_dump().items():
-            setattr(setting, key, value)
+            setattr(
+                setting,
+                key,
+                self._normalize_app_name(value)
+                if key == "discreet_app_name"
+                else value,
+            )
         return self._serialize(self.settings_repository.save(session, setting))
 
     def export_bundle(self, session: Session) -> ExportBundleResponse:

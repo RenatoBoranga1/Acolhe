@@ -7,11 +7,13 @@ import 'package:acolhe_mobile/shared/models/app_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final supportNetworkControllerProvider =
-    StateNotifierProvider<SupportNetworkController, List<TrustedContactModel>>((ref) {
+    StateNotifierProvider<SupportNetworkController, List<TrustedContactModel>>(
+        (ref) {
   return SupportNetworkController(ref.read(secureStorageProvider));
 });
 
-class SupportNetworkController extends StateNotifier<List<TrustedContactModel>> {
+class SupportNetworkController
+    extends StateNotifier<List<TrustedContactModel>> {
   SupportNetworkController(this._storage)
       : super(
           const [
@@ -51,6 +53,7 @@ class SupportNetworkController extends StateNotifier<List<TrustedContactModel>> 
 
   Future<void> addContact(TrustedContactModel value) async {
     state = [...state, value];
-    await _storage.writeList(StorageKeys.contacts, state.map((item) => item.toJson()).toList());
+    await _storage.writeList(
+        StorageKeys.contacts, state.map((item) => item.toJson()).toList());
   }
 }

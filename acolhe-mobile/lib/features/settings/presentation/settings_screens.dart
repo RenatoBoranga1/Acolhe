@@ -1,3 +1,4 @@
+import 'package:acolhe_mobile/core/config/app_identity.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/features/chat/application/chat_controller.dart';
 import 'package:acolhe_mobile/features/journal/application/journal_controller.dart';
@@ -26,24 +27,32 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               SwitchListTile(
                 value: auth.discreetMode,
-                onChanged: (value) => ref.read(authControllerProvider.notifier).updateSecurityPreferences(
+                onChanged: (value) => ref
+                    .read(authControllerProvider.notifier)
+                    .updateSecurityPreferences(
                       discreetMode: value,
-                      aliasName: value ? 'Aurora' : 'Acolhe',
+                      aliasName: AppIdentity.appName,
                     ),
                 title: const Text('Modo discreto'),
-                subtitle: const Text('Usa nome alternativo e tom visual mais neutro.'),
+                subtitle: const Text(
+                    'Mantem a interface mais neutra sem trocar o nome do app.'),
               ),
               SwitchListTile(
                 value: auth.biometricsEnabled,
-                onChanged: (value) => ref.read(authControllerProvider.notifier).updateSecurityPreferences(
+                onChanged: (value) => ref
+                    .read(authControllerProvider.notifier)
+                    .updateSecurityPreferences(
                       biometricsEnabled: value,
                     ),
                 title: const Text('Biometria'),
-                subtitle: const Text('Permite desbloqueio rapido quando suportado.'),
+                subtitle:
+                    const Text('Permite desbloqueio rapido quando suportado.'),
               ),
               SwitchListTile(
                 value: auth.notificationsHidden,
-                onChanged: (value) => ref.read(authControllerProvider.notifier).updateSecurityPreferences(
+                onChanged: (value) => ref
+                    .read(authControllerProvider.notifier)
+                    .updateSecurityPreferences(
                       notificationsHidden: value,
                     ),
                 title: const Text('Ocultar notificacoes sensiveis'),
@@ -51,11 +60,14 @@ class SettingsScreen extends ConsumerWidget {
               ),
               SwitchListTile(
                 value: auth.quickExitEnabled,
-                onChanged: (value) => ref.read(authControllerProvider.notifier).updateSecurityPreferences(
+                onChanged: (value) => ref
+                    .read(authControllerProvider.notifier)
+                    .updateSecurityPreferences(
                       quickExitEnabled: value,
                     ),
                 title: const Text('Saida rapida'),
-                subtitle: const Text('Mostra atalho para ocultar a interface imediatamente.'),
+                subtitle: const Text(
+                    'Mostra atalho para ocultar a interface imediatamente.'),
               ),
               const SizedBox(height: 12),
               Row(
@@ -73,7 +85,9 @@ class SettingsScreen extends ConsumerWidget {
                       if (value == null) {
                         return;
                       }
-                      ref.read(authControllerProvider.notifier).updateSecurityPreferences(
+                      ref
+                          .read(authControllerProvider.notifier)
+                          .updateSecurityPreferences(
                             autoLockMinutes: value,
                           );
                     },
@@ -100,7 +114,9 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 18),
             AppButton.secondary(
               label: 'Limpar conversa atual',
-              onPressed: () => ref.read(chatControllerProvider.notifier).clearCurrentConversation(),
+              onPressed: () => ref
+                  .read(chatControllerProvider.notifier)
+                  .clearCurrentConversation(),
             ),
             const SizedBox(height: 12),
             AppButton.secondary(
@@ -136,7 +152,7 @@ class PrivacyScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
     return AppShell(
-      title: auth.discreetMode ? auth.aliasName : 'Espaco privado',
+      title: auth.currentAppName,
       subtitle: 'Tela neutra para reduzir exposicao acidental.',
       showBack: false,
       maxContentWidth: 560,
@@ -144,7 +160,8 @@ class PrivacyScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Conteudo ocultado', style: Theme.of(context).textTheme.titleLarge),
+            Text('Conteudo ocultado',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 10),
             Text(
               'A interface sensivel foi escondida temporariamente. Quando estiver em um contexto seguro, volte para o app.',

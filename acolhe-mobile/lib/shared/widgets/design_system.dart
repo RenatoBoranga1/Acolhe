@@ -41,7 +41,8 @@ class AppButton extends StatelessWidget {
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(54),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         ),
         child: child,
       );
@@ -191,8 +192,14 @@ class RiskBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (background, foreground) = switch (risk.level) {
-      RiskLevel.low => (AcolheTheme.forest.withOpacity(0.12), AcolheTheme.forest),
-      RiskLevel.moderate => (AcolheTheme.clay.withOpacity(0.12), AcolheTheme.clay),
+      RiskLevel.low => (
+          AcolheTheme.forest.withOpacity(0.12),
+          AcolheTheme.forest
+        ),
+      RiskLevel.moderate => (
+          AcolheTheme.clay.withOpacity(0.12),
+          AcolheTheme.clay
+        ),
       RiskLevel.high => (AcolheTheme.rose.withOpacity(0.12), AcolheTheme.rose),
       RiskLevel.critical => (const Color(0xFF7E2628), const Color(0xFFFFE6E6)),
     };
@@ -212,7 +219,10 @@ class RiskBanner extends StatelessWidget {
               risk.level.index >= RiskLevel.high.index
                   ? 'Risco ${risk.level.label}. Priorize seguranca imediata e apoio humano.'
                   : 'Risco ${risk.level.label}. Podemos seguir com cuidado e sem pressa.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: foreground),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: foreground),
             ),
           ),
         ],
@@ -336,7 +346,8 @@ class QuickChip extends StatelessWidget {
       label: Text(label),
       onPressed: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.18)),
+      side: BorderSide(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.18)),
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? const Color(0xFF19242E)
           : Colors.white,
@@ -427,7 +438,8 @@ class ConversationHistoryTile extends StatelessWidget {
                   Text(
                     _formatConversationTime(conversation.updatedAt),
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.70),
+                      color:
+                          theme.textTheme.bodySmall?.color?.withOpacity(0.70),
                     ),
                   ),
                 ],
@@ -477,7 +489,11 @@ class SidebarSectionLabel extends StatelessWidget {
         label.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               letterSpacing: 1.2,
-              color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.72),
+              color: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.color
+                  ?.withOpacity(0.72),
             ),
       ),
     );
@@ -501,7 +517,8 @@ class NavigationActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tone = selected ? theme.colorScheme.primary : theme.colorScheme.onSurface;
+    final tone =
+        selected ? theme.colorScheme.primary : theme.colorScheme.onSurface;
     return ListTile(
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -583,18 +600,21 @@ class ChatBubble extends StatelessWidget {
             : viewportWidth >= 720
                 ? 460.0
                 : 320.0;
-    final riskAccent = !isUser && message.riskLevel.index >= RiskLevel.high.index;
+    final riskAccent =
+        !isUser && message.riskLevel.index >= RiskLevel.high.index;
     final background = isUser
         ? theme.colorScheme.primary
         : theme.brightness == Brightness.dark
             ? const Color(0xFF1A2530)
             : Colors.white;
-    final foreground = isUser ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
+    final foreground =
+        isUser ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
-        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Container(
             constraints: BoxConstraints(maxWidth: maxBubbleWidth),
@@ -693,7 +713,8 @@ class _TypingIndicatorBubbleState extends State<TypingIndicatorBubble>
             return Row(
               mainAxisSize: MainAxisSize.min,
               children: List.generate(3, (index) {
-                final phase = (_controller.value - (index * 0.16)).clamp(0.0, 1.0);
+                final phase =
+                    (_controller.value - (index * 0.16)).clamp(0.0, 1.0);
                 final opacity = 0.30 + (phase * 0.70);
                 return Container(
                   width: 8,
@@ -729,52 +750,72 @@ class ChatEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.10),
-              ),
-              child: Icon(
-                Icons.chat_bubble_outline_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                size: 28,
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompactHeight = constraints.maxHeight < 620;
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(0, isCompactHeight ? 16 : 0, 0, 24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: isCompactHeight ? 0 : constraints.maxHeight,
             ),
-            const SizedBox(height: 20),
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 10),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 28),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (final suggestion in suggestions)
-                  SizedBox(
-                    width: 220,
-                    child: ChatSuggestionCard(
-                      title: suggestion,
-                      caption: 'Use este atalho para comecar sem precisar explicar tudo de uma vez.',
-                      onTap: () => onSuggestionTap(suggestion),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  mainAxisAlignment: isCompactHeight
+                      ? MainAxisAlignment.start
+                      : MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.10),
+                      ),
+                      child: Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 28,
+                      ),
                     ),
-                  ),
-              ],
+                    const SizedBox(height: 20),
+                    Text(title,
+                        style: Theme.of(context).textTheme.headlineSmall),
+                    const SizedBox(height: 10),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 28),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final suggestion in suggestions)
+                          SizedBox(
+                            width: 220,
+                            child: ChatSuggestionCard(
+                              title: suggestion,
+                              caption:
+                                  'Use este atalho para comecar sem precisar explicar tudo de uma vez.',
+                              onTap: () => onSuggestionTap(suggestion),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -862,8 +903,12 @@ class ChatComposerBar extends StatelessWidget {
                     minLines: 1,
                     maxLines: 6,
                     keyboardType: TextInputType.multiline,
+                    textCapitalization: TextCapitalization.sentences,
+                    textInputAction: TextInputAction.newline,
+                    scrollPadding: const EdgeInsets.only(bottom: 120),
                     decoration: const InputDecoration.collapsed(
-                      hintText: 'Escreva no seu ritmo. Voce nao precisa contar tudo de uma vez.',
+                      hintText:
+                          'Escreva no seu ritmo. Voce nao precisa contar tudo de uma vez.',
                     ),
                   ),
                 ),
@@ -881,7 +926,9 @@ class ChatComposerBar extends StatelessWidget {
                     tooltip: isBusy ? 'Respondendo...' : 'Enviar',
                     onPressed: canSend ? onSend : null,
                     icon: Icon(
-                      isBusy ? Icons.more_horiz_rounded : Icons.arrow_upward_rounded,
+                      isBusy
+                          ? Icons.more_horiz_rounded
+                          : Icons.arrow_upward_rounded,
                       color: theme.colorScheme.onPrimary,
                     ),
                   ),
@@ -934,7 +981,8 @@ class PrivacyShieldOverlay extends StatelessWidget {
             children: [
               const Icon(Icons.shield_moon_outlined, size: 36),
               const SizedBox(height: 12),
-              Text('Conteudo protegido', style: Theme.of(context).textTheme.titleMedium),
+              Text('Conteudo protegido',
+                  style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Text(
                 'A visualizacao foi ocultada para reduzir exposicao acidental.',

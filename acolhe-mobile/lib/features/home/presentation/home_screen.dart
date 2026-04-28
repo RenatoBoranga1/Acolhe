@@ -15,7 +15,8 @@ class HomeScreen extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
     final chat = ref.watch(chatControllerProvider);
     final appName = auth.currentAppName;
-    final recentConversations = chat.conversations.take(3).toList(growable: false);
+    final recentConversations =
+        chat.conversations.take(3).toList(growable: false);
     return AppShell(
       title: appName,
       subtitle: auth.discreetMode
@@ -55,7 +56,9 @@ class HomeScreen extends ConsumerWidget {
                     label: 'Nova conversa protegida',
                     icon: Icons.add_comment_outlined,
                     onPressed: () async {
-                      await ref.read(chatControllerProvider.notifier).newConversation();
+                      await ref
+                          .read(chatControllerProvider.notifier)
+                          .newConversation();
                       if (!context.mounted) {
                         return;
                       }
@@ -69,7 +72,8 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Conversas recentes', style: Theme.of(context).textTheme.titleMedium),
+                  Text('Conversas recentes',
+                      style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 10),
                   Text(
                     'Historico salvo localmente no aparelho para retomada mais facil.',
@@ -79,7 +83,9 @@ class HomeScreen extends ConsumerWidget {
                   if (recentConversations.isEmpty)
                     const Text('Nenhuma conversa salva ainda.')
                   else
-                    for (var index = 0; index < recentConversations.length; index++) ...[
+                    for (var index = 0;
+                        index < recentConversations.length;
+                        index++) ...[
                       ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: Icon(
@@ -95,7 +101,8 @@ class HomeScreen extends ConsumerWidget {
                         onTap: () async {
                           await ref
                               .read(chatControllerProvider.notifier)
-                              .switchConversation(recentConversations[index].id);
+                              .switchConversation(
+                                  recentConversations[index].id);
                           if (!context.mounted) {
                             return;
                           }
@@ -116,44 +123,51 @@ class HomeScreen extends ConsumerWidget {
             children: [
               HomeFeatureCard(
                 title: 'Conversar agora',
-                subtitle: 'Abrir o chat acolhedor com respostas curtas, seguras e responsaveis.',
+                subtitle:
+                    'Abrir o chat acolhedor com respostas curtas, seguras e responsaveis.',
                 icon: Icons.chat_bubble_outline_rounded,
                 onTap: () => context.push('/chat'),
               ),
               HomeFeatureCard(
                 title: 'Preciso de ajuda urgente',
-                subtitle: 'Atalhos para seguranca imediata, rede de apoio e plano rapido.',
+                subtitle:
+                    'Atalhos para seguranca imediata, rede de apoio e plano rapido.',
                 icon: Icons.warning_amber_rounded,
                 tone: Theme.of(context).colorScheme.error,
                 onTap: () => context.push('/urgent-help'),
               ),
               HomeFeatureCard(
                 title: 'Registrar o que aconteceu',
-                subtitle: 'Guardar fatos importantes em um rascunho pessoal privado.',
+                subtitle:
+                    'Guardar fatos importantes em um rascunho pessoal privado.',
                 icon: Icons.event_note_outlined,
                 onTap: () => context.push('/incident-record'),
               ),
               HomeFeatureCard(
                 title: 'Plano de seguranca',
-                subtitle: 'Locais seguros, sinais de alerta, passos imediatos e checklist.',
+                subtitle:
+                    'Locais seguros, sinais de alerta, passos imediatos e checklist.',
                 icon: Icons.shield_outlined,
                 onTap: () => context.push('/safety-plan'),
               ),
               HomeFeatureCard(
                 title: 'Rede de apoio',
-                subtitle: 'Contatos confiaveis e mensagem pronta para pedir ajuda.',
+                subtitle:
+                    'Contatos confiaveis e mensagem pronta para pedir ajuda.',
                 icon: Icons.people_outline_rounded,
                 onTap: () => context.push('/support-network'),
               ),
               HomeFeatureCard(
                 title: 'Informacoes e direitos',
-                subtitle: 'Conteudo educativo em linguagem clara e facil de atualizar.',
+                subtitle:
+                    'Conteudo educativo em linguagem clara e facil de atualizar.',
                 icon: Icons.menu_book_outlined,
                 onTap: () => context.push('/resources'),
               ),
               HomeFeatureCard(
                 title: 'Configuracoes e privacidade',
-                subtitle: 'Modo discreto, biometria, auto-bloqueio e limpeza rapida.',
+                subtitle:
+                    'Modo discreto, biometria, auto-bloqueio e limpeza rapida.',
                 icon: Icons.lock_outline_rounded,
                 onTap: () => context.push('/settings'),
               ),
@@ -197,7 +211,9 @@ class UrgentHelpScreen extends ConsumerWidget {
               icon: Icons.call_rounded,
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Integre aqui o discador seguro do dispositivo.')),
+                  const SnackBar(
+                      content: Text(
+                          'Integre aqui o discador seguro do dispositivo.')),
                 );
               },
             ),
