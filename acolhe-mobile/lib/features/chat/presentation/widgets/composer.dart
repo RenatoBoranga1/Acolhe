@@ -12,6 +12,7 @@ class ChatComposer extends StatelessWidget {
     required this.maxWidth,
     super.key,
     this.errorMessage,
+    this.compactMode = false,
     this.keyboardInset = 0,
     this.onRetry,
   });
@@ -22,6 +23,7 @@ class ChatComposer extends StatelessWidget {
   final bool isBusy;
   final double maxWidth;
   final double keyboardInset;
+  final bool compactMode;
   final String? errorMessage;
   final VoidCallback? onRetry;
   final VoidCallback onSend;
@@ -56,6 +58,7 @@ class ChatComposer extends StatelessWidget {
                 canSend: canSend,
                 inputEnabled: true,
                 isBusy: isBusy,
+                compactMode: compactMode,
                 errorMessage: errorMessage,
                 onRetry: onRetry,
                 onSend: onSend,

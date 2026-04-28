@@ -829,6 +829,7 @@ class ChatComposerBar extends StatelessWidget {
     this.canSend = false,
     this.inputEnabled = true,
     this.isBusy = false,
+    this.compactMode = false,
     this.onRetry,
     this.errorMessage,
   });
@@ -839,6 +840,7 @@ class ChatComposerBar extends StatelessWidget {
   final bool canSend;
   final bool inputEnabled;
   final bool isBusy;
+  final bool compactMode;
   final VoidCallback? onRetry;
   final String? errorMessage;
 
@@ -846,7 +848,8 @@ class ChatComposerBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      padding: EdgeInsets.fromLTRB(
+          16, compactMode ? 10 : 14, 16, compactMode ? 12 : 16),
       decoration: BoxDecoration(
         color: theme.brightness == Brightness.dark
             ? const Color(0xFF10171D).withOpacity(0.96)
@@ -891,7 +894,12 @@ class ChatComposerBar extends StatelessWidget {
                     : const Color(0xFFE3DACE),
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              compactMode ? 10 : 12,
+              12,
+              compactMode ? 10 : 12,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -905,7 +913,9 @@ class ChatComposerBar extends StatelessWidget {
                     keyboardType: TextInputType.multiline,
                     textCapitalization: TextCapitalization.sentences,
                     textInputAction: TextInputAction.newline,
-                    scrollPadding: const EdgeInsets.only(bottom: 120),
+                    scrollPadding: EdgeInsets.only(
+                      bottom: compactMode ? 96 : 120,
+                    ),
                     decoration: const InputDecoration.collapsed(
                       hintText:
                           'Escreva no seu ritmo. Voce nao precisa contar tudo de uma vez.',

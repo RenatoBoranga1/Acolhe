@@ -35,8 +35,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _composerFocusNode = FocusNode();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey _composerKey = GlobalKey();
   String _lastScrollSignature = '';
   double _lastKeyboardInset = 0;
+  double _composerHeight = 116;
 
   @override
   void initState() {
@@ -67,6 +69,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  void _syncComposerMetrics() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final renderBox =
+          _composerKey.currentContext?.findRenderObject() as RenderBox?;
+      final measuredHeight = renderBox?.size.height;
+      if (measuredHeight == null ||
+          (measuredHeight - _composerHeight).abs() < 1) {
+        return;
+      }
+      setState(() {
+        _composerHeight = measuredHeight;
+      });
+      _scheduleScrollToBottom(animated: false);
+    });
+  }
+
   Future<void> _submitMessage([String? value]) async {
     final controller = ref.read(chatControllerProvider.notifier);
     final text = (value ?? _messageController.text).trim();
@@ -84,7 +105,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (!_scrollController.hasClients) {
         return;
       }
-      final offset = _scrollController.position.maxScrollExtent + 120;
+      final offset =
+          _scrollController.position.maxScrollExtent + _composerHeight + 40;
       if (animated) {
         _scrollController.animateTo(
           offset,
@@ -98,11 +120,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   double _messageBottomPadding(BuildContext context, double keyboardInset) {
-    final height = MediaQuery.sizeOf(context).height;
-    if (keyboardInset > 0) {
-      return (height * 0.18).clamp(108.0, 156.0);
-    }
-    return 36;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    final extraSpacing = keyboardInset > 0 ? 18.0 : 12.0;
+    return _composerHeight + safeBottom + extraSpacing;
   }
 
   Future<void> _showRenameDialog(ConversationModel conversation) async {
@@ -217,6 +237,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final width = MediaQuery.sizeOf(context).width;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     final isWideLayout = AppResponsive.showsInlineSidebar(width);
+    final compactMobileHeader = keyboardInset > 0 &&
+        !isWideLayout &&
+        AppResponsive.isMobileWidth(width);
     final chatMaxWidth = AppResponsive.chatMaxWidth(width);
     final conversation = chat.activeConversation;
     final hasMessages = conversation.messages.isNotEmpty;
@@ -237,6 +260,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _scheduleScrollToBottom(animated: true);
       }
     }
+    _syncComposerMetrics();
 
     return Scaffold(
       key: _scaffoldKey,
@@ -306,6 +330,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       responseMode: chat.responseMode,
                       lastSyncedAt: chat.lastSyncedAt,
                       showDebug: _showChatDebug,
+                      compact: compactMobileHeader,
                       isWideLayout: isWideLayout,
                       onOpenMenu: () => _scaffoldKey.currentState?.openDrawer(),
                       onNewConversation: _newConversation,
@@ -365,22 +390,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ),
                       ),
                     ),
-                    ChatComposer(
-                      controller: _messageController,
-                      focusNode: _composerFocusNode,
-                      canSend: canSend,
-                      isBusy: chat.isTyping,
-                      keyboardInset: keyboardInset,
-                      maxWidth: chatMaxWidth,
-                      errorMessage: chat.errorMessage,
-                      onRetry: chat.hasRetryAvailable
-                          ? () {
-                              ref
-                                  .read(chatControllerProvider.notifier)
-                                  .retryLastResponse();
-                            }
-                          : null,
-                      onSend: _submitMessage,
+                    SizedBox(
+                      key: _composerKey,
+                      child: ChatComposer(
+                        controller: _messageController,
+                        focusNode: _composerFocusNode,
+                        canSend: canSend,
+                        isBusy: chat.isTyping,
+                        compactMode: compactMobileHeader,
+                        keyboardInset: keyboardInset,
+                        maxWidth: chatMaxWidth,
+                        errorMessage: chat.errorMessage,
+                        onRetry: chat.hasRetryAvailable
+                            ? () {
+                                ref
+                                    .read(chatControllerProvider.notifier)
+                                    .retryLastResponse();
+                              }
+                            : null,
+                        onSend: _submitMessage,
+                      ),
                     ),
                   ],
                 ),

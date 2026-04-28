@@ -21,6 +21,7 @@ class ChatHeader extends StatelessWidget {
     this.responseMode,
     this.lastSyncedAt,
     this.showDebug = false,
+    this.compact = false,
   });
 
   final String appName;
@@ -32,6 +33,7 @@ class ChatHeader extends StatelessWidget {
   final String? responseMode;
   final DateTime? lastSyncedAt;
   final bool showDebug;
+  final bool compact;
   final bool isWideLayout;
   final VoidCallback onOpenMenu;
   final VoidCallback onNewConversation;
@@ -92,46 +94,79 @@ class ChatHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(title, style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 6),
-          Text(subtitle, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              const _HeaderInfoChip(
-                icon: Icons.lock_outline_rounded,
-                label: 'Historico protegido',
-              ),
-              _HeaderInfoChip(
-                icon: Icons.shield_outlined,
-                label: 'Risco ${risk.level.label}',
-                tone: _riskTone(risk.level),
-              ),
-              if (situation != ChatSituationKind.unknown)
-                _HeaderInfoChip(
-                  icon: Icons.psychology_alt_outlined,
-                  label: situation.label,
-                  tone: theme.colorScheme.secondary,
-                ),
-              _HeaderInfoChip(
-                icon: syncStatus == ChatSyncStatus.synced
-                    ? Icons.cloud_done_outlined
-                    : Icons.cloud_off_outlined,
-                label: _syncLabel(syncStatus, lastSyncedAt),
-                tone: syncStatus == ChatSyncStatus.synced
-                    ? AcolheTheme.forest
-                    : AcolheTheme.clay,
-              ),
-              if (showDebug && mode != ChatResponseModeKind.unknown)
-                _HeaderInfoChip(
-                  icon: Icons.bug_report_outlined,
-                  label: 'Modo: ${mode.label}',
-                  tone: AcolheTheme.mutedTeal,
-                ),
-            ],
+          Text(
+            title,
+            style: compact
+                ? theme.textTheme.titleMedium
+                : theme.textTheme.headlineSmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+          if (!compact) ...[
+            const SizedBox(height: 6),
+            Text(subtitle, style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                const _HeaderInfoChip(
+                  icon: Icons.lock_outline_rounded,
+                  label: 'Historico protegido',
+                ),
+                _HeaderInfoChip(
+                  icon: Icons.shield_outlined,
+                  label: 'Risco ${risk.level.label}',
+                  tone: _riskTone(risk.level),
+                ),
+                if (situation != ChatSituationKind.unknown)
+                  _HeaderInfoChip(
+                    icon: Icons.psychology_alt_outlined,
+                    label: situation.label,
+                    tone: theme.colorScheme.secondary,
+                  ),
+                _HeaderInfoChip(
+                  icon: syncStatus == ChatSyncStatus.synced
+                      ? Icons.cloud_done_outlined
+                      : Icons.cloud_off_outlined,
+                  label: _syncLabel(syncStatus, lastSyncedAt),
+                  tone: syncStatus == ChatSyncStatus.synced
+                      ? AcolheTheme.forest
+                      : AcolheTheme.clay,
+                ),
+                if (showDebug && mode != ChatResponseModeKind.unknown)
+                  _HeaderInfoChip(
+                    icon: Icons.bug_report_outlined,
+                    label: 'Modo: ${mode.label}',
+                    tone: AcolheTheme.mutedTeal,
+                  ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _HeaderInfoChip(
+                  icon: Icons.shield_outlined,
+                  label: 'Risco ${risk.level.label}',
+                  tone: _riskTone(risk.level),
+                ),
+                _HeaderInfoChip(
+                  icon: syncStatus == ChatSyncStatus.synced
+                      ? Icons.cloud_done_outlined
+                      : Icons.cloud_off_outlined,
+                  label: syncStatus == ChatSyncStatus.synced
+                      ? 'Sincronizado'
+                      : syncStatus.label,
+                  tone: syncStatus == ChatSyncStatus.synced
+                      ? AcolheTheme.forest
+                      : AcolheTheme.clay,
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
