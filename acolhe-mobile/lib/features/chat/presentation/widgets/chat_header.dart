@@ -2,6 +2,7 @@ import 'package:acolhe_mobile/core/theme/app_theme.dart';
 import 'package:acolhe_mobile/features/chat/application/chat_controller.dart';
 import 'package:acolhe_mobile/features/chat/domain/chat_intelligence_ui.dart';
 import 'package:acolhe_mobile/shared/models/app_models.dart';
+import 'package:acolhe_mobile/shared/widgets/brand_logo.dart';
 import 'package:flutter/material.dart';
 
 class ChatHeader extends StatelessWidget {
@@ -72,19 +73,10 @@ class ChatHeader extends StatelessWidget {
                   icon: const Icon(Icons.menu_rounded),
                 ),
               if (!isWideLayout) const SizedBox(width: 4),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Text(
-                  appName,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
+              Tooltip(
+                message: appName,
+                child: AcolheBrandPill(
+                    onDark: theme.brightness == Brightness.dark),
               ),
               const Spacer(),
               IconButton(

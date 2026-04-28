@@ -1,4 +1,5 @@
 import 'package:acolhe_mobile/shared/models/app_models.dart';
+import 'package:acolhe_mobile/shared/widgets/brand_logo.dart';
 import 'package:acolhe_mobile/shared/widgets/design_system.dart';
 import 'package:flutter/material.dart';
 
@@ -46,8 +47,12 @@ class ConversationDrawer extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Acolhe', style: theme.textTheme.headlineSmall),
-              const SizedBox(height: 6),
+              AcolheBrandLockup(
+                markSize: 42,
+                showTagline: false,
+                onDark: theme.brightness == Brightness.dark,
+              ),
+              const SizedBox(height: 10),
               Text(
                 'Conversa protegida, historico local e acesso rapido aos outros modulos.',
                 style: theme.textTheme.bodyMedium,

@@ -1,3 +1,4 @@
+import 'package:acolhe_mobile/core/theme/app_theme.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/features/chat/application/chat_controller.dart';
 import 'package:acolhe_mobile/features/chat/presentation/widgets/chat_header.dart';
@@ -267,9 +268,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     Color(0xFF0D141A),
                   ]
                 : const [
-                    Color(0xFFF4EEE7),
-                    Color(0xFFF3F6F7),
-                    Color(0xFFF7F1EB),
+                    AcolheTheme.warmShell,
+                    Color(0xFFF4F7FA),
+                    Color(0xFFF7F2EC),
                   ],
           ),
         ),

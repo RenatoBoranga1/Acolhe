@@ -1,6 +1,7 @@
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/features/chat/application/chat_controller.dart';
 import 'package:acolhe_mobile/shared/widgets/app_shell.dart';
+import 'package:acolhe_mobile/shared/widgets/brand_logo.dart';
 import 'package:acolhe_mobile/shared/widgets/design_system.dart';
 import 'package:acolhe_mobile/shared/widgets/responsive_layout.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,8 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const AcolheBrandLockup(markSize: 64),
+                  const SizedBox(height: 20),
                   const SectionTitle(
                     title: 'Chat como centro do cuidado',
                     subtitle:

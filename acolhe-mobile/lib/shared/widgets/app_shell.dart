@@ -1,4 +1,5 @@
 import 'package:acolhe_mobile/core/navigation/safe_navigation.dart';
+import 'package:acolhe_mobile/core/theme/app_theme.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/shared/widgets/responsive_layout.dart';
 import 'package:flutter/material.dart';
@@ -50,9 +51,9 @@ class AppShell extends ConsumerWidget {
                     Color(0xFF10171D)
                   ]
                 : const [
-                    Color(0xFFF5EFE9),
-                    Color(0xFFF2F5F6),
-                    Color(0xFFF7F1EC)
+                    AcolheTheme.warmShell,
+                    Color(0xFFF4F7FA),
+                    Color(0xFFF7F2EC)
                   ],
           ),
         ),

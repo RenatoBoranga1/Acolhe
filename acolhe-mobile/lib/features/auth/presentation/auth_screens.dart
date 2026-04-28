@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/shared/widgets/app_shell.dart';
+import 'package:acolhe_mobile/shared/widgets/brand_logo.dart';
 import 'package:acolhe_mobile/shared/widgets/design_system.dart';
 import 'package:acolhe_mobile/shared/widgets/responsive_layout.dart';
 import 'package:flutter/material.dart';
@@ -41,38 +42,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     return Scaffold(
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 92,
-              height: 92,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(28),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const AcolheBrandLockup(
+                orientation: AcolheLockupOrientation.vertical,
+                markSize: 106,
+                center: true,
               ),
-              child: Icon(
-                Icons.shield_outlined,
-                size: 44,
-                color: Theme.of(context).colorScheme.primary,
+              const SizedBox(height: 18),
+              Text(
+                auth.discreetMode
+                    ? 'Espaco privado protegido'
+                    : 'Acolhimento inicial com privacidade, escuta e seguranca',
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              auth.currentAppName,
-              style: Theme.of(context).textTheme.displaySmall,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              auth.discreetMode
-                  ? 'Espaco privado protegido'
-                  : 'Acolhimento inicial com privacidade e seguranca',
-              style: Theme.of(context).textTheme.bodyLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 28),
-            const CircularProgressIndicator(),
-          ],
+              const SizedBox(height: 28),
+              const CircularProgressIndicator(),
+            ],
+          ),
         ),
       ),
     );
@@ -107,6 +98,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  AcolheBrandLockup(markSize: 70),
+                  SizedBox(height: 18),
                   SectionTitle(
                     title: 'Como o Acolhe pode apoiar',
                     subtitle:
@@ -202,6 +195,10 @@ class _PinSetupScreenState extends ConsumerState<PinSetupScreen> {
       maxContentWidth: 560,
       child: Column(
         children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 18),
+            child: AcolheBrandMark(size: 54, withContainer: true),
+          ),
           GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,6 +281,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       maxContentWidth: 560,
       child: Column(
         children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 18),
+            child: AcolheBrandMark(size: 54, withContainer: true),
+          ),
           GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

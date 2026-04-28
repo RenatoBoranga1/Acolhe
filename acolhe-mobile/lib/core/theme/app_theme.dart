@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 
 class AcolheTheme {
-  static const Color sand = Color(0xFFF3EEE8);
-  static const Color ink = Color(0xFF1D2730);
-  static const Color teal = Color(0xFF44616B);
-  static const Color mutedTeal = Color(0xFF69818A);
+  static const Color trustBlue = Color(0xFF6E93B8);
+  static const Color calmGreen = Color(0xFF7FAE9B);
+  static const Color lavender = Color(0xFFB6A6D9);
+  static const Color warmShell = Color(0xFFF5F1EB);
+  static const Color graphite = Color(0xFF2F3A45);
+  static const Color sand = warmShell;
+  static const Color ink = graphite;
+  static const Color teal = trustBlue;
+  static const Color mutedTeal = Color(0xFF87A6C2);
   static const Color clay = Color(0xFF9C7761);
   static const Color rose = Color(0xFFA45E60);
-  static const Color forest = Color(0xFF5A6F63);
+  static const Color forest = calmGreen;
   static const Color night = Color(0xFF121A21);
   static const Color slate = Color(0xFF21313D);
-  static const Color mist = Color(0xFFE3E7EA);
+  static const Color mist = Color(0xFFE6EBF0);
 
   static ThemeData get lightTheme {
     const colorScheme = ColorScheme(
