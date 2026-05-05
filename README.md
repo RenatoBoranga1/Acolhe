@@ -167,6 +167,24 @@ Principais chaves:
 - `LLM_MODEL`
 - `PRIMARY_USER_PIN`
 
+## Deploy no Render
+
+O backend ja esta preparado para subir no Render com Blueprint:
+
+- arquivo [render.yaml](./render.yaml)
+- guia [docs/render-deploy.md](./docs/render-deploy.md)
+- start seguro com migracoes em [render-start.sh](./acolhe-backend/scripts/render-start.sh)
+
+Arquitetura recomendada nesta configuracao:
+
+- `Render Web Service` para a API FastAPI
+- `Render Postgres` para o banco
+
+Observacao importante:
+
+- o `render.yaml` usa `free` por padrao para facilitar teste inicial;
+- para uso serio do `Acolhe`, prefira trocar depois para planos pagos no Render.
+
 ## Rotas principais da API
 
 - `POST /api/v1/auth/pin/setup`

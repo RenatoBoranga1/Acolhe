@@ -33,6 +33,25 @@ Comando direto equivalente:
 docker compose up --build
 ```
 
+## Deploy no Render
+
+Este backend ja esta preparado para Render com:
+
+- `render.yaml` na raiz do repositorio;
+- `rootDir` apontando para `acolhe-backend`;
+- start command via `bash ./scripts/render-start.sh`;
+- migracoes automaticas com `alembic upgrade head`;
+- health check em `/health`.
+
+Guia completo:
+
+- [../docs/render-deploy.md](../docs/render-deploy.md)
+
+Observacoes:
+
+- o Blueprint usa `free` por padrao para facilitar teste inicial;
+- para ambiente serio, troque depois o web service para `starter` e o banco para `basic-256mb` ou acima.
+
 ## Testes
 
 ```bash
