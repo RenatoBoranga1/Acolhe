@@ -13,6 +13,8 @@ class ChatSendResult {
     this.backendFallbackUsed = false,
     this.validationRepaired = false,
     this.servedFromFallback = false,
+    this.canRetryRemote = false,
+    this.fallbackReason,
   });
 
   final String conversationId;
@@ -26,4 +28,6 @@ class ChatSendResult {
   final bool backendFallbackUsed;
   final bool validationRepaired;
   final bool servedFromFallback;
+  final bool canRetryRemote;
+  final String? fallbackReason;
 }

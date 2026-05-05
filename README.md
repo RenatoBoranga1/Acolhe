@@ -78,7 +78,7 @@ Nesta maquina, use o Python embutido do workspace:
 
 ```bash
 cd acolhe-backend
-copy ..\\.env.example .env
+Copy-Item ..\.env.example .env
 ..\start-backend.ps1
 ```
 
@@ -141,6 +141,8 @@ powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId SEU_DEVICE_I
 ```
 
 Importante: `SEU_DEVICE_ID` e `SEU_IP_LOCAL` sao exemplos. Nao use os caracteres `<` e `>` no PowerShell.
+
+Quando `API_BASE_URL` estiver configurado, o `ChatController` usa o backend FastAPI real para listar conversas, criar nova conversa e enviar mensagens. O fallback local continua existindo apenas para modo demonstracao ou indisponibilidade temporaria da API.
 
 Para usar especificamente o botao `Run` do Android Studio, veja [docs/android-studio-run.md](./docs/android-studio-run.md).
 

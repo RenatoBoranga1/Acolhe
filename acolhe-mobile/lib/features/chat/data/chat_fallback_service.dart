@@ -8,6 +8,8 @@ class ChatFallbackService {
     required String conversationId,
     required String text,
     required List<ChatMessageModel> history,
+    String fallbackReason = 'not_configured',
+    bool canRetryRemote = false,
   }) {
     final risk = _assessRisk(text);
     final response = _composeReply(text, history, risk);
@@ -46,8 +48,11 @@ class ChatFallbackService {
       conversationContext: {
         'source': 'mobile_local_fallback',
         'history_size': history.length,
+        'fallback_reason': fallbackReason,
       },
       servedFromFallback: true,
+      canRetryRemote: canRetryRemote,
+      fallbackReason: fallbackReason,
     );
   }
 

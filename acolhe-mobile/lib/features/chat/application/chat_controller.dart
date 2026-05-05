@@ -23,11 +23,13 @@ class PendingResponseContext {
     required this.conversationId,
     required this.prompt,
     required this.userMessageId,
+    this.assistantMessageIdToReplace,
   });
 
   final String conversationId;
   final String prompt;
   final String userMessageId;
+  final String? assistantMessageIdToReplace;
 }
 
 class ChatState {
@@ -42,6 +44,7 @@ class ChatState {
     required this.quickSuggestions,
     required this.lastResponseUsedFallback,
     required this.lastResponseWasRepaired,
+    this.lastAssistantMessage,
     this.errorMessage,
     this.retryContext,
     this.responseMode,
@@ -60,6 +63,7 @@ class ChatState {
   final List<String> quickSuggestions;
   final bool lastResponseUsedFallback;
   final bool lastResponseWasRepaired;
+  final ChatMessageModel? lastAssistantMessage;
   final String? errorMessage;
   final PendingResponseContext? retryContext;
   final String? responseMode;
@@ -87,6 +91,7 @@ class ChatState {
     List<String>? quickSuggestions,
     bool? lastResponseUsedFallback,
     bool? lastResponseWasRepaired,
+    ChatMessageModel? lastAssistantMessage,
     String? errorMessage,
     bool clearError = false,
     PendingResponseContext? retryContext,
@@ -112,6 +117,9 @@ class ChatState {
       lastResponseWasRepaired: clearResponseMetadata
           ? false
           : lastResponseWasRepaired ?? this.lastResponseWasRepaired,
+      lastAssistantMessage: clearResponseMetadata
+          ? null
+          : lastAssistantMessage ?? this.lastAssistantMessage,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       retryContext:
           clearRetryContext ? null : retryContext ?? this.retryContext,
@@ -179,6 +187,7 @@ class ChatState {
       quickSuggestions: defaultChatSuggestions,
       lastResponseUsedFallback: false,
       lastResponseWasRepaired: false,
+      lastAssistantMessage: null,
     );
   }
 
@@ -494,6 +503,7 @@ class ChatController extends StateNotifier<ChatState> {
           ? ChatSyncStatus.syncing
           : ChatSyncStatus.localOnly,
       clearError: true,
+      clearResponseMetadata: true,
       retryContext: PendingResponseContext(
         conversationId: optimisticConversation.id,
         prompt: trimmed,
@@ -525,12 +535,33 @@ class ChatController extends StateNotifier<ChatState> {
     final conversation = state.conversations.firstWhere(
       (item) => item.id == retryContext.conversationId,
     );
+    final sanitizedHistory = retryContext.assistantMessageIdToReplace == null
+        ? conversation.messages
+        : conversation.messages
+            .where(
+              (item) => item.id != retryContext.assistantMessageIdToReplace,
+            )
+            .toList(growable: false);
+    final sanitizedConversation =
+        retryContext.assistantMessageIdToReplace == null
+            ? conversation
+            : conversation.copyWith(
+                messages: sanitizedHistory,
+                updatedAt: DateTime.now(),
+              );
 
-    state = state.copyWith(isTyping: true, clearError: true);
+    state = state.copyWith(
+      conversations: retryContext.assistantMessageIdToReplace == null
+          ? state.conversations
+          : _replaceConversation(sanitizedConversation),
+      isTyping: true,
+      clearError: true,
+    );
+    await persist();
     await _completeAssistantResponse(
-      conversationId: conversation.id,
+      conversationId: sanitizedConversation.id,
       prompt: retryContext.prompt,
-      history: conversation.messages,
+      history: sanitizedHistory,
     );
   }
 
@@ -588,6 +619,7 @@ class ChatController extends StateNotifier<ChatState> {
         quickSuggestions: reply.suggestions.isEmpty
             ? ChatState.defaultChatSuggestions
             : reply.suggestions,
+        lastAssistantMessage: reply.assistantMessage,
         responseMode: reply.responseMode,
         situationType: reply.situationType,
         conversationContext: reply.conversationContext,
@@ -595,14 +627,26 @@ class ChatController extends StateNotifier<ChatState> {
             reply.servedFromFallback || reply.backendFallbackUsed,
         lastResponseWasRepaired: reply.validationRepaired,
         syncStatus: reply.servedFromFallback
-            ? ChatSyncStatus.offline
+            ? (_repository.isRemoteEnabled
+                ? ChatSyncStatus.offline
+                : ChatSyncStatus.localOnly)
             : ChatSyncStatus.synced,
-        lastSyncedAt: reply.servedFromFallback ? null : DateTime.now(),
+        lastSyncedAt:
+            reply.servedFromFallback ? state.lastSyncedAt : DateTime.now(),
         errorMessage: reply.servedFromFallback
-            ? 'Sem conexao com o backend agora. Usei uma resposta local segura.'
+            ? _fallbackStatusMessage(reply.fallbackReason)
             : null,
         clearError: !reply.servedFromFallback,
-        clearRetryContext: true,
+        retryContext: reply.canRetryRemote
+            ? PendingResponseContext(
+                conversationId: reply.conversationId,
+                prompt: prompt,
+                userMessageId:
+                    state.retryContext?.userMessageId ?? generateId(),
+                assistantMessageIdToReplace: reply.assistantMessage.id,
+              )
+            : null,
+        clearRetryContext: !reply.canRetryRemote,
       );
       await persist();
     } on TimeoutException {
@@ -760,6 +804,23 @@ class ChatController extends StateNotifier<ChatState> {
       requiresImmediateAction:
           conversation.lastRiskLevel.index >= RiskLevel.high.index,
     );
+  }
+
+  String _fallbackStatusMessage(String? fallbackReason) {
+    return switch (fallbackReason) {
+      'not_configured' =>
+        'O backend nao esta configurado neste aparelho. Mantive uma resposta local segura para voce continuar.',
+      'timeout' =>
+        'O backend demorou para responder. Mantive uma resposta local segura e voce pode tentar novamente quando quiser.',
+      'rate_limited' =>
+        'O backend recebeu muitas requisicoes agora. Mantive uma resposta local segura e voce pode tentar novamente em instantes.',
+      'conversation_not_found' =>
+        'A conversa precisou ser recriada para continuar com seguranca. Use a resposta local por enquanto ou tente novamente.',
+      'server_error' =>
+        'O backend ficou indisponivel agora. Mantive uma resposta local segura e voce pode tentar novamente.',
+      _ =>
+        'Sem conexao com o backend agora. Usei uma resposta local segura e sua mensagem continua salva neste aparelho.',
+    };
   }
 }
 

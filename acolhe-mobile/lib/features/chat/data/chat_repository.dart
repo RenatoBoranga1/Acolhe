@@ -55,6 +55,7 @@ class ChatRepository {
         conversationId: conversationId ?? generateId(),
         text: message,
         history: history,
+        fallbackReason: 'not_configured',
       );
     }
 
@@ -82,12 +83,16 @@ class ChatRepository {
         conversationId: conversationId ?? generateId(),
         text: message,
         history: history,
+        fallbackReason: _mapFallbackReason(error),
+        canRetryRemote: true,
       );
     } on Object {
       return _fallbackService.buildSafeReply(
         conversationId: conversationId ?? generateId(),
         text: message,
         history: history,
+        fallbackReason: 'connection_error',
+        canRetryRemote: true,
       );
     }
   }
@@ -109,5 +114,24 @@ class ChatRepository {
           .toList(growable: false),
     );
     return response.toDomain();
+  }
+
+  String _mapFallbackReason(ChatApiException error) {
+    if (error.message.contains('Tempo limite')) {
+      return 'timeout';
+    }
+    if (error.statusCode == 404) {
+      return 'conversation_not_found';
+    }
+    if (error.statusCode == 408 || error.statusCode == 504) {
+      return 'timeout';
+    }
+    if (error.statusCode == 429) {
+      return 'rate_limited';
+    }
+    if (error.statusCode != null && error.statusCode! >= 500) {
+      return 'server_error';
+    }
+    return 'connection_error';
   }
 }

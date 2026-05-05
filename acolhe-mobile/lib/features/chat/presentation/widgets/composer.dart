@@ -30,6 +30,9 @@ class ChatComposer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final effectiveKeyboardInset =
+        bottomInset > keyboardInset ? bottomInset : keyboardInset;
     return Focus(
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent &&
@@ -47,7 +50,7 @@ class ChatComposer extends StatelessWidget {
         child: AnimatedPadding(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          padding: EdgeInsets.only(bottom: keyboardInset > 0 ? 8 : 0),
+          padding: EdgeInsets.only(bottom: effectiveKeyboardInset > 0 ? 8 : 0),
           child: Align(
             alignment: Alignment.bottomCenter,
             child: ConstrainedBox(

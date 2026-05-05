@@ -27,6 +27,7 @@ Decisao de produto aplicada:
 - o chat passou a ser o centro da experiencia autenticada;
 - o fluxo principal do chat usa o backend FastAPI em `/api/v1/chat` quando `API_BASE_URL` esta configurado;
 - o fallback local existe apenas para desenvolvimento/offline, mantendo uma resposta segura se a API falhar;
+- em falha temporaria do backend, a conversa continua com fallback seguro e a UI oferece `Tentar novamente` sem perder a mensagem;
 - o historico de conversas ficou persistido localmente com conversa ativa salva;
 - o chat exibe sinais de inteligencia do backend, como nivel de risco, tipo de situacao, CTAs sugeridos e estados seguros de fallback;
 - em risco alto/critico, a UI prioriza ajuda urgente, plano de seguranca e rede de apoio;
