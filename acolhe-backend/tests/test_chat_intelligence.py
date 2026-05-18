@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from app.modules.chat.intelligence.conversation_memory_service import ConversationMemoryService
+from app.modules.chat.intelligence.conversation_memory_service import (
+    ConversationMemoryService,
+)
 from app.modules.chat.intelligence.models import (
     ConversationMemory,
     ResponseMode,
@@ -8,10 +10,16 @@ from app.modules.chat.intelligence.models import (
     SituationClassification,
 )
 from app.modules.chat.intelligence.prompt_builder_service import PromptBuilderService
-from app.modules.chat.intelligence.response_orchestrator_service import ResponseOrchestratorService
-from app.modules.chat.intelligence.response_validator_service import ResponseValidatorService
+from app.modules.chat.intelligence.response_orchestrator_service import (
+    ResponseOrchestratorService,
+)
+from app.modules.chat.intelligence.response_validator_service import (
+    ResponseValidatorService,
+)
 from app.modules.chat.intelligence.risk_assessment_service import RiskAssessmentService
-from app.modules.chat.intelligence.situation_classifier_service import SituationClassifierService
+from app.modules.chat.intelligence.situation_classifier_service import (
+    SituationClassifierService,
+)
 from app.modules.chat.intelligence.tone_selector_service import ToneSelectorService
 
 
@@ -52,7 +60,9 @@ def test_risk_assessment_escalates_fear_of_reencounter() -> None:
 
 
 def test_tone_selector_uses_decision_support_for_reporting_ambivalence() -> None:
-    memory = ConversationMemory(conversation_id="conversation-1", wants_to_report="unsure")
+    memory = ConversationMemory(
+        conversation_id="conversation-1", wants_to_report="unsure"
+    )
     situation = SituationClassifierService().classify(
         message="Quero denunciar, mas nao consigo decidir.",
         history=[],
@@ -94,7 +104,12 @@ def test_memory_updates_structured_context() -> None:
     updated = service.update(
         memory=memory,
         latest_message="Meu chefe faz isso toda semana e tenho prints das mensagens.",
-        history=[{"role": "user", "content": "Meu chefe faz isso toda semana e tenho prints das mensagens."}],
+        history=[
+            {
+                "role": "user",
+                "content": "Meu chefe faz isso toda semana e tenho prints das mensagens.",
+            }
+        ],
         risk=risk,
         situation=situation,
         response_mode="structured_guidance",
@@ -198,3 +213,61 @@ def test_orchestrator_records_safe_metrics_for_fallback() -> None:
     assert result.metrics.situation_type == "reporting_ambivalence"
     assert result.metrics.risk_level in {"low", "moderate"}
     assert result.metrics.repaired in {True, False}
+
+
+def test_validator_repairs_generic_uncertainty_reply_without_specific_terms() -> None:
+    memory = ConversationMemory(
+        conversation_id="conversation-2",
+        known_facts=["Ele comenta sobre o meu corpo toda semana no trabalho."],
+    )
+    risk = RiskAssessmentResult(
+        level="moderate",
+        score=0.48,
+        triggers=["comentarios recorrentes"],
+        rationale="relato recorrente com impacto emocional",
+        recommended_mode="structured_guidance",
+        recommended_actions=["organizar fatos"],
+        requires_immediate_action=False,
+    )
+    situation = SituationClassification(
+        type="harassment_uncertainty",
+        confidence=0.88,
+        signals=["comenta sobre o meu corpo", "toda semana", "trabalho"],
+    )
+
+    result = ResponseValidatorService().validate(
+        candidate=(
+            "Faz sentido isso ter te afetado. "
+            "Podemos olhar para essa situacao com calma e pensar em proximos passos. "
+            "Se quiser, voce pode me contar mais."
+        ),
+        fallback=(
+            "Comentarios repetidos sobre o seu corpo, especialmente no trabalho, "
+            "podem ser analisados pelo padrao, pelo contexto e pelo impacto em voce. "
+            "Podemos organizar esses pontos sem concluir nada com pressa."
+        ),
+        risk=risk,
+        situation=situation,
+        response_mode=ResponseMode("structured_guidance", "duvida recorrente"),
+        memory=memory,
+        recent_assistant_messages=[],
+    )
+
+    assert result.repaired is True
+    assert "too_generic" in result.issues
+
+
+def test_orchestrator_high_risk_response_includes_safety_focus() -> None:
+    result = ResponseOrchestratorService().respond(
+        conversation_id="conversation-3",
+        latest_message="Ele disse que vai me encontrar hoje, estou sozinha e com muito medo.",
+        stored_messages=[],
+        client_history=[],
+    )
+
+    assert result.risk.level in {"high", "critical"}
+    assert result.response_mode.name == "safety_first"
+    assert any(
+        term in result.assistant_text.lower()
+        for term in ("segur", "local seguro", "pessoa de confianca", "emergencia")
+    )

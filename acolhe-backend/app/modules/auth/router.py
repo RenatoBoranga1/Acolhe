@@ -23,13 +23,19 @@ def auth_status(session: Session = Depends(get_db)) -> AuthStatusResponse:
 
 
 @router.post("/pin/setup", response_model=AuthStatusResponse)
-def setup_pin(payload: PinSetupRequest, session: Session = Depends(get_db)) -> AuthStatusResponse:
-    user = service.setup_pin(session, pin=payload.pin, display_name=payload.display_name)
+def setup_pin(
+    payload: PinSetupRequest, session: Session = Depends(get_db)
+) -> AuthStatusResponse:
+    user = service.setup_pin(
+        session, pin=payload.pin, display_name=payload.display_name
+    )
     return AuthStatusResponse(user=user)
 
 
 @router.post("/pin/verify", response_model=PinVerifyResponse)
-def verify_pin(payload: PinVerifyRequest, session: Session = Depends(get_db)) -> PinVerifyResponse:
+def verify_pin(
+    payload: PinVerifyRequest, session: Session = Depends(get_db)
+) -> PinVerifyResponse:
     valid, user = service.verify(session, pin=payload.pin)
     return PinVerifyResponse(
         valid=valid,

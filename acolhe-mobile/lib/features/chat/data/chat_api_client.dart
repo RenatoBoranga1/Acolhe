@@ -75,6 +75,84 @@ class ChatApiClient {
         jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  Future<ConversationDto> getConversation(String conversationId) async {
+    final response = await _send(
+      () => _client.get(_uri('/conversations/$conversationId'),
+          headers: _headers),
+    );
+    return ConversationDto.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<ConversationDto> updateConversation({
+    required String conversationId,
+    String? title,
+    bool? discreetMode,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (title != null) {
+      payload['title'] = title;
+    }
+    if (discreetMode != null) {
+      payload['discreet_mode'] = discreetMode;
+    }
+    final response = await _send(
+      () => _client.patch(
+        _uri('/conversations/$conversationId'),
+        headers: _headers,
+        body: jsonEncode(payload),
+      ),
+    );
+    return ConversationDto.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<void> deleteConversation(String conversationId) async {
+    await _send(
+      () => _client.delete(_uri('/conversations/$conversationId'),
+          headers: _headers),
+    );
+  }
+
+  Future<PaginatedMessagesResponseDto> listMessages({
+    required String conversationId,
+    int page = 1,
+    int pageSize = 40,
+  }) async {
+    final response = await _send(
+      () => _client.get(
+        _uri(
+            '/conversations/$conversationId/messages?page=$page&page_size=$pageSize'),
+        headers: _headers,
+      ),
+    );
+    return PaginatedMessagesResponseDto.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<MessageFeedbackResponseDto> sendMessageFeedback({
+    required String messageId,
+    required String rating,
+    String? note,
+  }) async {
+    final response = await _send(
+      () => _client.post(
+        _uri('/messages/$messageId/feedback'),
+        headers: _headers,
+        body: jsonEncode({
+          'rating': rating,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        }),
+      ),
+    );
+    return MessageFeedbackResponseDto.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
   Future<ChatMessageResponseDto> sendMessage({
     required String? conversationId,
     required String message,

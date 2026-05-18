@@ -39,7 +39,9 @@ class SafetyPlanService:
             plan = self.repository.save_safety_plan(session, plan)
         return self._serialize(plan)
 
-    def upsert(self, session: Session, payload: SafetyPlanUpsertRequest) -> SafetyPlanResponse:
+    def upsert(
+        self, session: Session, payload: SafetyPlanUpsertRequest
+    ) -> SafetyPlanResponse:
         user = self._user(session)
         plan = self.repository.get_safety_plan(session, user.id)
         if plan is None:

@@ -4,7 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.modules.support_network.schemas import TrustedContactCreate, TrustedContactResponse
+from app.modules.support_network.schemas import (
+    TrustedContactCreate,
+    TrustedContactResponse,
+)
 from app.modules.support_network.service import SupportNetworkService
 
 router = APIRouter()

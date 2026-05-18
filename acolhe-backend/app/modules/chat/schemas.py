@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -19,9 +20,10 @@ class ConversationPayload(BaseModel):
     id: str
     title: str
     last_risk_level: str
+    created_at: datetime
     updated_at: datetime
     discreet_mode: bool
-    messages: list[MessagePayload] = []
+    messages: list[MessagePayload] = Field(default_factory=list)
 
 
 class ContextMessagePayload(BaseModel):
@@ -39,6 +41,36 @@ class ChatMessageRequest(BaseModel):
 class NewConversationRequest(BaseModel):
     title: str = Field(default="Nova conversa", min_length=2, max_length=160)
     discreet_mode: bool = False
+
+
+class UpdateConversationRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=2, max_length=160)
+    discreet_mode: bool | None = None
+
+
+class ConversationDeleteResponse(BaseModel):
+    conversation_id: str
+    deleted: bool = True
+
+
+class PaginatedMessagesResponse(BaseModel):
+    conversation_id: str
+    page: int
+    page_size: int
+    total: int
+    has_more: bool
+    items: list[MessagePayload] = Field(default_factory=list)
+
+
+class MessageFeedbackRequest(BaseModel):
+    rating: Literal["helpful", "not_helpful", "unsafe", "repetitive"]
+    note: str | None = Field(default=None, max_length=500)
+
+
+class MessageFeedbackResponse(BaseModel):
+    message_id: str
+    stored: bool = True
+    updated_at: datetime
 
 
 class ChatMessageResponse(BaseModel):

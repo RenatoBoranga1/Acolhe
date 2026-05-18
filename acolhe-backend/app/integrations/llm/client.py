@@ -7,7 +7,6 @@ import httpx
 
 from app.core.config import get_settings
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -16,7 +15,9 @@ class LLMClient:
         self.settings = get_settings()
 
     def load_system_prompt(self) -> str:
-        prompt_path = Path(__file__).resolve().parents[2] / "prompts" / "acolhe_system_prompt.md"
+        prompt_path = (
+            Path(__file__).resolve().parents[2] / "prompts" / "acolhe_system_prompt.md"
+        )
         return prompt_path.read_text(encoding="utf-8")
 
     def is_enabled(self) -> bool:
@@ -78,12 +79,16 @@ class LLMClient:
                 data = response.json()
             return data["choices"][0]["message"]["content"].strip()
         except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError):
-            logger.warning("LLM unavailable for chat response, using deterministic fallback.")
+            logger.warning(
+                "LLM unavailable for chat response, using deterministic fallback."
+            )
             return None
 
     def _temperature_for_risk(self, risk_level: str) -> float:
-        if risk_level in {"high", "critical"}:
-            return 0.28
+        if risk_level == "critical":
+            return self.settings.llm_temperature_critical
+        if risk_level == "high":
+            return self.settings.llm_temperature_high
         if risk_level == "moderate":
-            return 0.52
-        return 0.58
+            return self.settings.llm_temperature_moderate
+        return self.settings.llm_temperature_default

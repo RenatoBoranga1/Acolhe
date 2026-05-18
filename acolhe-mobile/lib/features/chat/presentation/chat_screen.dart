@@ -37,6 +37,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _lastScrollSignature = '';
   double _lastKeyboardInset = 0;
+  double _composerHeight = 136;
 
   @override
   void initState() {
@@ -98,7 +99,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   double _messageBottomPadding(double keyboardInset) {
-    return keyboardInset > 0 ? 24 : 30;
+    return _composerHeight + (keyboardInset > 0 ? 18 : 26);
   }
 
   Future<void> _showRenameDialog(ConversationModel conversation) async {
@@ -261,21 +262,33 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         padding: EdgeInsets.only(
           left: isWideLayout ? AppResponsive.chatSidebarWidth(width) : 0,
         ),
-        child: ChatComposer(
-          controller: _messageController,
-          focusNode: _composerFocusNode,
-          canSend: canSend,
-          isBusy: chat.isTyping,
-          compactMode: compactMobileHeader,
-          keyboardInset: keyboardInset,
-          maxWidth: chatMaxWidth,
-          errorMessage: chat.errorMessage,
-          onRetry: chat.hasRetryAvailable
-              ? () {
-                  ref.read(chatControllerProvider.notifier).retryLastResponse();
-                }
-              : null,
-          onSend: _submitMessage,
+        child: _MeasureSize(
+          onChange: (size) {
+            if (!mounted || (_composerHeight - size.height).abs() <= 1) {
+              return;
+            }
+            setState(() {
+              _composerHeight = size.height;
+            });
+          },
+          child: ChatComposer(
+            controller: _messageController,
+            focusNode: _composerFocusNode,
+            canSend: canSend,
+            isBusy: chat.isTyping,
+            compactMode: compactMobileHeader,
+            keyboardInset: keyboardInset,
+            maxWidth: chatMaxWidth,
+            errorMessage: chat.errorMessage,
+            onRetry: chat.hasRetryAvailable
+                ? () {
+                    ref
+                        .read(chatControllerProvider.notifier)
+                        .retryLastResponse();
+                  }
+                : null,
+            onSend: _submitMessage,
+          ),
         ),
       ),
       body: DecoratedBox(
@@ -356,6 +369,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                         conversation: conversation,
                                         risk: chat.latestRisk,
                                         ctas: chat.latestCtas,
+                                        hasMoreMessages: chat.hasMoreMessages,
+                                        isLoadingHistory: chat.isLoadingHistory,
                                         situationType: chat.situationType,
                                         responseMode: chat.responseMode,
                                         conversationContext:
@@ -368,6 +383,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                         scrollController: _scrollController,
                                         bottomPadding: _messageBottomPadding(
                                             keyboardInset),
+                                        onLoadOlderMessages: () {
+                                          ref
+                                              .read(chatControllerProvider
+                                                  .notifier)
+                                              .loadOlderMessages();
+                                        },
                                         onNavigate: _navigateTo,
                                       )
                                     : ChatEmptyState(
@@ -395,5 +416,38 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
       ),
     );
+  }
+}
+
+class _MeasureSize extends StatefulWidget {
+  const _MeasureSize({
+    required this.onChange,
+    required this.child,
+  });
+
+  final ValueChanged<Size> onChange;
+  final Widget child;
+
+  @override
+  State<_MeasureSize> createState() => _MeasureSizeState();
+}
+
+class _MeasureSizeState extends State<_MeasureSize> {
+  Size? _lastSize;
+
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final size = context.size;
+      if (size == null || size == _lastSize) {
+        return;
+      }
+      _lastSize = size;
+      widget.onChange(size);
+    });
+    return widget.child;
   }
 }

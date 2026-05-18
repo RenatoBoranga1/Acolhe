@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,7 +43,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(RateLimitMiddleware, max_requests_per_minute=settings.rate_limit_per_minute)
+    app.add_middleware(
+        RateLimitMiddleware, max_requests_per_minute=settings.rate_limit_per_minute
+    )
     app.include_router(api_router, prefix=settings.api_prefix)
 
     @app.get("/health", response_model=HealthResponse, tags=["health"])
@@ -51,7 +53,7 @@ def create_app() -> FastAPI:
         return HealthResponse(
             status="ok",
             app=settings.app_name,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
     return app

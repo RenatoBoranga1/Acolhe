@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import re
 import unicodedata
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
 
 from app.modules.risk.schemas import RiskAssessmentResponse
 
@@ -22,7 +22,15 @@ class ConversationContext:
 
 
 class ChatResponseEngine:
-    SIGNAL_PRIORITY = ("safety", "uncertainty", "record", "support", "work", "impact", "general")
+    SIGNAL_PRIORITY = (
+        "safety",
+        "uncertainty",
+        "record",
+        "support",
+        "work",
+        "impact",
+        "general",
+    )
     SIGNAL_PATTERNS = {
         "safety": (
             "medo",
@@ -290,7 +298,11 @@ class ChatResponseEngine:
         history = client if client and len(client) >= len(stored) else stored
 
         normalized_latest = self._normalize(latest_message)
-        if not history or history[-1]["role"] != "user" or self._normalize(history[-1]["content"]) != normalized_latest:
+        if (
+            not history
+            or history[-1]["role"] != "user"
+            or self._normalize(history[-1]["content"]) != normalized_latest
+        ):
             history = [*history, {"role": "user", "content": latest_message}]
 
         return history[-12:]
@@ -311,7 +323,9 @@ class ChatResponseEngine:
         )[-3:]
         recent_openings = tuple(
             opening
-            for opening in (self._first_sentence(item) for item in recent_assistant_messages)
+            for opening in (
+                self._first_sentence(item) for item in recent_assistant_messages
+            )
             if opening
         )
 
@@ -344,19 +358,26 @@ class ChatResponseEngine:
                 and "nao quero responder" not in normalized_latest
                 and "nao quero falar" not in normalized_latest
             ),
-            is_follow_up=len(recent_user_messages) > 1 or len(recent_assistant_messages) > 0,
+            is_follow_up=len(recent_user_messages) > 1
+            or len(recent_assistant_messages) > 0,
         )
 
-    def build_llm_guidance(self, context: ConversationContext, risk: RiskAssessmentResponse) -> str:
+    def build_llm_guidance(
+        self, context: ConversationContext, risk: RiskAssessmentResponse
+    ) -> str:
         lines = [
             "Responda em portugues natural, com no maximo 4 frases curtas e linguagem nao repetitiva.",
             f"Foco principal da conversa: {self._signal_label(context.primary_signal)}.",
         ]
         if context.secondary_signals:
-            labels = ", ".join(self._signal_label(item) for item in context.secondary_signals)
+            labels = ", ".join(
+                self._signal_label(item) for item in context.secondary_signals
+            )
             lines.append(f"Sinais secundarios recentes: {labels}.")
         if context.is_follow_up:
-            lines.append("A conversa ja esta em andamento; nao responda como se fosse o primeiro contato.")
+            lines.append(
+                "A conversa ja esta em andamento; nao responda como se fosse o primeiro contato."
+            )
         if context.recent_openings:
             lines.append(
                 "Evite repetir estas aberturas recentes: "
@@ -366,7 +387,10 @@ class ChatResponseEngine:
         if context.recent_assistant_messages:
             lines.append(
                 "Nao reutilize frases ou estruturas muito parecidas com estas respostas recentes: "
-                + " | ".join(self._truncate_text(item, 140) for item in context.recent_assistant_messages)
+                + " | ".join(
+                    self._truncate_text(item, 140)
+                    for item in context.recent_assistant_messages
+                )
                 + "."
             )
         if context.should_offer_scope_note:
@@ -375,7 +399,9 @@ class ChatResponseEngine:
                 "e orientacao geral, sem substituir ajuda profissional."
             )
         else:
-            lines.append("Nao repita avisos de escopo nesta resposta, a menos que isso seja realmente necessario.")
+            lines.append(
+                "Nao repita avisos de escopo nesta resposta, a menos que isso seja realmente necessario."
+            )
         if risk.level in {"high", "critical"}:
             lines.append(
                 "Como ha sinal de risco elevado, priorize seguranca imediata, reduza a resposta "
@@ -396,7 +422,9 @@ class ChatResponseEngine:
         risk: RiskAssessmentResponse,
         context: ConversationContext | None = None,
     ) -> str:
-        context = context or self.build_context(history, latest_message=latest_message, risk=risk)
+        context = context or self.build_context(
+            history, latest_message=latest_message, risk=risk
+        )
         if risk.level in {"high", "critical"} or context.primary_signal == "safety":
             return self._compose_safety_response(latest_message, risk, context)
 
@@ -407,7 +435,9 @@ class ChatResponseEngine:
             blocked=context.recent_openings,
         )
         context_line = self._pick_phrase(
-            self.CONTEXT_LINES.get(context.primary_signal, self.CONTEXT_LINES["general"]),
+            self.CONTEXT_LINES.get(
+                context.primary_signal, self.CONTEXT_LINES["general"]
+            ),
             seed=f"{seed}|context",
             blocked=context.recent_assistant_messages,
         )
@@ -452,7 +482,9 @@ class ChatResponseEngine:
         risk: RiskAssessmentResponse,
         context: ConversationContext | None = None,
     ) -> str:
-        context = context or self.build_context(history, latest_message=latest_message, risk=risk)
+        context = context or self.build_context(
+            history, latest_message=latest_message, risk=risk
+        )
         if not candidate or not candidate.strip():
             return self.compose_response(
                 latest_message=latest_message,
@@ -472,12 +504,19 @@ class ChatResponseEngine:
             normalized = self._normalize(repaired)
             has_safety_terms = any(
                 term in normalized
-                for term in ("seguranca", "local seguro", "emergencia", "pessoa de confianca")
+                for term in (
+                    "seguranca",
+                    "local seguro",
+                    "emergencia",
+                    "pessoa de confianca",
+                )
             )
             if not has_safety_terms or len(repaired) > 360:
                 return self._compose_safety_response(latest_message, risk, context)
 
-        if self._looks_repetitive(repaired, context.recent_assistant_messages, context.recent_openings):
+        if self._looks_repetitive(
+            repaired, context.recent_assistant_messages, context.recent_openings
+        ):
             return self.compose_response(
                 latest_message=latest_message,
                 history=history,
@@ -576,7 +615,9 @@ class ChatResponseEngine:
     def _matches_recent(self, candidate: str, blocked_items: Sequence[str]) -> bool:
         normalized_candidate = self._normalize(candidate)
         for blocked in blocked_items:
-            if normalized_candidate == blocked or self._is_similar(normalized_candidate, blocked):
+            if normalized_candidate == blocked or self._is_similar(
+                normalized_candidate, blocked
+            ):
                 return True
         return False
 
@@ -590,7 +631,9 @@ class ChatResponseEngine:
         candidate_opening = self._normalize(self._first_sentence(candidate))
         for item in recent_messages:
             normalized_item = self._normalize(item)
-            if normalized_candidate == normalized_item or self._is_similar(normalized_candidate, normalized_item):
+            if normalized_candidate == normalized_item or self._is_similar(
+                normalized_candidate, normalized_item
+            ):
                 return True
         for opening in recent_openings:
             normalized_opening = self._normalize(opening)
@@ -607,7 +650,9 @@ class ChatResponseEngine:
             return True
 
         if any(marker in normalized for marker in self.GENERIC_MARKERS):
-            context_terms = self.CONTEXT_TERMS.get(context.primary_signal, self.CONTEXT_TERMS["general"])
+            context_terms = self.CONTEXT_TERMS.get(
+                context.primary_signal, self.CONTEXT_TERMS["general"]
+            )
             if not any(term in normalized for term in context_terms):
                 return True
         return False
@@ -652,7 +697,9 @@ class ChatResponseEngine:
         compact = re.sub(r"\s+", " ", text.strip())
         if not compact:
             return []
-        return [item.strip() for item in re.split(r"(?<=[.!?])\s+", compact) if item.strip()]
+        return [
+            item.strip() for item in re.split(r"(?<=[.!?])\s+", compact) if item.strip()
+        ]
 
     def _sanitize_text(self, text: str) -> str:
         compact = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -660,7 +707,9 @@ class ChatResponseEngine:
         compact = re.sub(r"\n{3,}", "\n\n", compact)
         return compact.strip()
 
-    def _sanitize_history(self, history: Sequence[dict[str, str]]) -> list[dict[str, str]]:
+    def _sanitize_history(
+        self, history: Sequence[dict[str, str]]
+    ) -> list[dict[str, str]]:
         sanitized: list[dict[str, str]] = []
         for item in history:
             role = str(item.get("role", "")).strip().lower()
@@ -672,7 +721,9 @@ class ChatResponseEngine:
 
     def _normalize(self, text: str) -> str:
         normalized = unicodedata.normalize("NFKD", text.lower())
-        normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+        normalized = "".join(
+            char for char in normalized if not unicodedata.combining(char)
+        )
         return re.sub(r"\s+", " ", normalized).strip()
 
     def _first_sentence(self, text: str) -> str:

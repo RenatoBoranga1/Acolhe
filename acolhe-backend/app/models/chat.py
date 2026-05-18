@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, ForeignKey, JSON, String, Text
+from sqlalchemy import JSON, Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, UUIDTimestampMixin
@@ -19,7 +19,9 @@ class Conversation(UUIDTimestampMixin, Base):
 class Message(UUIDTimestampMixin, Base):
     __tablename__ = "messages"
 
-    conversation_id: Mapped[str] = mapped_column(ForeignKey("conversations.id"), index=True)
+    conversation_id: Mapped[str] = mapped_column(
+        ForeignKey("conversations.id"), index=True
+    )
     role: Mapped[str] = mapped_column(String(20))
     content: Mapped[str] = mapped_column(Text)
     risk_level: Mapped[str] = mapped_column(String(20), default="low")

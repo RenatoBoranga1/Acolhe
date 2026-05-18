@@ -2,19 +2,27 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.integrations.llm.client import LLMClient
 from app.models import Message
-from app.modules.chat.intelligence.conversation_memory_service import ConversationMemoryService
-from app.modules.chat.intelligence.models import ChatOrchestrationResult, OrchestrationMetrics
+from app.modules.chat.intelligence.conversation_memory_service import (
+    ConversationMemoryService,
+)
+from app.modules.chat.intelligence.models import (
+    ChatOrchestrationResult,
+    OrchestrationMetrics,
+)
 from app.modules.chat.intelligence.prompt_builder_service import PromptBuilderService
-from app.modules.chat.intelligence.response_validator_service import ResponseValidatorService
+from app.modules.chat.intelligence.response_validator_service import (
+    ResponseValidatorService,
+)
 from app.modules.chat.intelligence.risk_assessment_service import RiskAssessmentService
-from app.modules.chat.intelligence.situation_classifier_service import SituationClassifierService
+from app.modules.chat.intelligence.situation_classifier_service import (
+    SituationClassifierService,
+)
 from app.modules.chat.intelligence.tone_selector_service import ToneSelectorService
 from app.modules.chat.response_engine import ChatResponseEngine
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +47,7 @@ class ResponseOrchestratorService:
         client_history: Sequence[dict[str, str]] | None,
     ) -> ChatOrchestrationResult:
         stored_history = [
-            {"role": item.role, "content": item.content}
-            for item in stored_messages
+            {"role": item.role, "content": item.content} for item in stored_messages
         ]
         history = self.fallback_engine.select_history(
             stored_history=stored_history,
@@ -86,7 +93,9 @@ class ResponseOrchestratorService:
         recent_assistant_messages = [
             item["content"] for item in history if item.get("role") == "assistant"
         ][-3:]
-        recent_openings = [self._first_sentence(item) for item in recent_assistant_messages]
+        recent_openings = [
+            self._first_sentence(item) for item in recent_assistant_messages
+        ]
         prompt_bundle = self.prompt_builder.build(
             memory=memory,
             risk=risk,
@@ -134,7 +143,9 @@ class ResponseOrchestratorService:
             recent_assistant_messages=recent_assistant_messages,
         )
         fallback_used = fallback_used or validation.repaired
-        ctas = self._ctas_for(risk=risk, situation_type=situation.type, response_mode=response_mode.name)
+        ctas = self._ctas_for(
+            risk=risk, situation_type=situation.type, response_mode=response_mode.name
+        )
         metrics = OrchestrationMetrics(
             fallback_used=fallback_used,
             risk_level=risk.level,
@@ -173,11 +184,23 @@ class ResponseOrchestratorService:
                 "Ver servicos de apoio",
             ]
         if situation_type == "incident_record":
-            return ["Gerar resumo cronologico", "Adicionar evidencia", "Salvar registro privado"]
+            return [
+                "Gerar resumo cronologico",
+                "Adicionar evidencia",
+                "Salvar registro privado",
+            ]
         if situation_type == "support_request":
-            return ["Escrever mensagem pronta", "Abrir rede de apoio", "Escolher contato"]
+            return [
+                "Escrever mensagem pronta",
+                "Abrir rede de apoio",
+                "Escolher contato",
+            ]
         if situation_type == "reporting_ambivalence":
-            return ["Organizar opcoes", "Registrar fatos", "Falar com pessoa de confianca"]
+            return [
+                "Organizar opcoes",
+                "Registrar fatos",
+                "Falar com pessoa de confianca",
+            ]
         return [
             "Registrar o que aconteceu",
             "Montar plano de seguranca",
@@ -321,11 +344,16 @@ class ResponseOrchestratorService:
         seed: str,
         recent_messages: Sequence[str],
     ) -> str:
-        ordered = sorted(options, key=lambda item: hashlib.md5(f"{seed}|{item}".encode()).hexdigest())
+        ordered = sorted(
+            options, key=lambda item: hashlib.md5(f"{seed}|{item}".encode()).hexdigest()
+        )
         normalized_recent = [self._normalize(item) for item in recent_messages]
         for item in ordered:
             normalized = self._normalize(item)
-            if not any(normalized == recent or self._token_overlap(normalized, recent) >= 0.72 for recent in normalized_recent):
+            if not any(
+                normalized == recent or self._token_overlap(normalized, recent) >= 0.72
+                for recent in normalized_recent
+            ):
                 return item
         return ordered[0]
 
@@ -337,7 +365,9 @@ class ResponseOrchestratorService:
         right_tokens = {item for item in right.split() if len(item) > 3}
         if not left_tokens or not right_tokens:
             return 0.0
-        return len(left_tokens & right_tokens) / min(len(left_tokens), len(right_tokens))
+        return len(left_tokens & right_tokens) / min(
+            len(left_tokens), len(right_tokens)
+        )
 
     def _first_sentence(self, text: str) -> str:
         stripped = text.strip()

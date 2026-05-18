@@ -8,7 +8,15 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.security import hash_pin
-from app.models import AppSetting, Conversation, Message, ResourceArticle, SafetyPlan, TrustedContact, User
+from app.models import (
+    AppSetting,
+    Conversation,
+    Message,
+    ResourceArticle,
+    SafetyPlan,
+    TrustedContact,
+    User,
+)
 
 
 def _load_json(relative_path: str) -> dict:

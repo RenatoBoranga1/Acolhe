@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.modules.chat.intelligence.models import (
     ConversationMemory,
@@ -23,7 +23,12 @@ class ResponseValidatorService:
         "legalmente isso e",
         "garanto que",
     )
-    MINIMIZING = ("nao foi nada", "voce esta exagerando", "esquece isso", "isso e normal")
+    MINIMIZING = (
+        "nao foi nada",
+        "voce esta exagerando",
+        "esquece isso",
+        "isso e normal",
+    )
     SAFETY_TERMS = ("seguranca", "seguro", "emergencia", "pessoa de confianca", "ajuda")
     GENERIC_MARKERS = (
         "sinto muito",
@@ -48,6 +53,14 @@ class ResponseValidatorService:
         "safety": ("sua seguranca", "quero priorizar", "antes de qualquer coisa"),
         "record": ("organizar", "registrar", "colocar em ordem"),
     }
+    GENERIC_ABSTRACTIONS = (
+        "isso",
+        "situacao",
+        "assim",
+        "desse jeito",
+        "esse caso",
+        "o que aconteceu",
+    )
 
     def validate(
         self,
@@ -64,7 +77,9 @@ class ResponseValidatorService:
         issues: list[str] = []
 
         if not text:
-            return ResponseValidationResult(text=fallback, issues=["empty_response"], repaired=True)
+            return ResponseValidationResult(
+                text=fallback, issues=["empty_response"], repaired=True
+            )
 
         normalized = self._normalize(text)
         if any(term in normalized for term in self.FORBIDDEN_AUTHORITY):
@@ -80,7 +95,12 @@ class ResponseValidatorService:
         if self._lacks_situation_specificity(normalized, situation, memory):
             issues.append("insufficient_specificity")
 
-        max_sentences = 2 if risk.level in {"high", "critical"} or response_mode.name == "safety_first" else 4
+        max_sentences = (
+            2
+            if risk.level in {"high", "critical"}
+            or response_mode.name == "safety_first"
+            else 4
+        )
         limited = self._limit_sentences(text, max_sentences=max_sentences)
         if limited != text:
             issues.append("too_long")
@@ -106,7 +126,9 @@ class ResponseValidatorService:
                 return True
         return False
 
-    def _has_structural_repetition(self, text: str, recent_messages: Sequence[str]) -> bool:
+    def _has_structural_repetition(
+        self, text: str, recent_messages: Sequence[str]
+    ) -> bool:
         signature = self._structure_signature(text)
         opening_family = self._opening_family(text)
         if not signature:
@@ -128,11 +150,22 @@ class ResponseValidatorService:
         situation: SituationClassification,
         memory: ConversationMemory,
     ) -> bool:
-        generic_count = sum(1 for marker in self.GENERIC_MARKERS if marker in normalized)
-        if generic_count < 2 and "sinto muito que voce esteja passando por isso" not in normalized:
-            return False
+        generic_count = sum(
+            1 for marker in self.GENERIC_MARKERS if marker in normalized
+        )
+        if (
+            generic_count < 2
+            and "sinto muito que voce esteja passando por isso" not in normalized
+        ):
+            if not self._looks_generically_shaped(normalized):
+                return False
         expected_terms = self._specificity_terms(situation, memory)
-        return not any(term in normalized for term in expected_terms)
+        signals = [self._normalize(signal) for signal in situation.signals if signal]
+        if any(term in normalized for term in expected_terms):
+            return False
+        if any(signal in normalized for signal in signals if len(signal) > 4):
+            return False
+        return True
 
     def _lacks_situation_specificity(
         self,
@@ -144,7 +177,9 @@ class ResponseValidatorService:
             return False
         expected_terms = self._specificity_terms(situation, memory)
         anchor_count = sum(1 for term in expected_terms if term and term in normalized)
-        required = 1 if situation.type in {"emotional_crisis", "fear_of_reencounter"} else 2
+        required = (
+            1 if situation.type in {"emotional_crisis", "fear_of_reencounter"} else 2
+        )
         if anchor_count >= required:
             return False
         if memory.known_facts:
@@ -153,8 +188,18 @@ class ResponseValidatorService:
                 return False
         return True
 
+    def _looks_generically_shaped(self, normalized: str) -> bool:
+        if self._opening_family(normalized):
+            return True
+        abstraction_count = sum(
+            1 for marker in self.GENERIC_ABSTRACTIONS if marker in normalized
+        )
+        return abstraction_count >= 2 and len(normalized.split()) < 42
+
     def _limit_sentences(self, text: str, *, max_sentences: int) -> str:
-        sentences = [item.strip() for item in re.split(r"(?<=[.!?])\s+", text) if item.strip()]
+        sentences = [
+            item.strip() for item in re.split(r"(?<=[.!?])\s+", text) if item.strip()
+        ]
         if len(sentences) <= max_sentences:
             return text
         return " ".join(sentences[:max_sentences])
@@ -218,14 +263,18 @@ class ResponseValidatorService:
                 "sentar",
                 "agua",
             ),
-        }.get(situation.type, ("fatos", "seguranca", "apoio", memory.user_emotional_state))
+        }.get(
+            situation.type, ("fatos", "seguranca", "apoio", memory.user_emotional_state)
+        )
         dynamic_terms = [
             memory.user_emotional_state,
             memory.aggressor_relation,
             memory.repeated_behavior,
             memory.evidence_status,
         ]
-        return tuple(term for term in (*terms, *dynamic_terms) if term and term != "unknown")
+        return tuple(
+            term for term in (*terms, *dynamic_terms) if term and term != "unknown"
+        )
 
     def _structure_signature(self, text: str) -> tuple[str, ...]:
         intents = self._sentence_intents(text)
@@ -234,22 +283,38 @@ class ResponseValidatorService:
         return tuple(intents[:4])
 
     def _sentence_intents(self, text: str) -> list[str]:
-        sentences = [item.strip() for item in re.split(r"(?<=[.!?])\s+", text) if item.strip()]
+        sentences = [
+            item.strip() for item in re.split(r"(?<=[.!?])\s+", text) if item.strip()
+        ]
         return [self._sentence_intent(sentence) for sentence in sentences[:4]]
 
     def _sentence_intent(self, sentence: str) -> str:
         normalized = self._normalize(sentence)
         if normalized.endswith("?"):
             return "question"
-        if any(term in normalized for term in ("seguranca", "emergencia", "local seguro", "risco")):
+        if any(
+            term in normalized
+            for term in ("seguranca", "emergencia", "local seguro", "risco")
+        ):
             return "safety"
-        if any(term in normalized for term in ("faz sentido", "entendo", "imagino", "parece")):
+        if any(
+            term in normalized
+            for term in ("faz sentido", "entendo", "imagino", "parece")
+        ):
             return "validation"
-        if any(term in normalized for term in ("pode", "opcao", "caminho", "sem pressao")):
+        if any(
+            term in normalized for term in ("pode", "opcao", "caminho", "sem pressao")
+        ):
             return "options"
-        if any(term in normalized for term in ("registr", "data", "local", "testemunha", "prints")):
+        if any(
+            term in normalized
+            for term in ("registr", "data", "local", "testemunha", "prints")
+        ):
             return "record"
-        if any(term in normalized for term in ("posso", "podemos", "a gente pode", "te ajudar")):
+        if any(
+            term in normalized
+            for term in ("posso", "podemos", "a gente pode", "te ajudar")
+        ):
             return "offer"
         return "context"
 
@@ -268,7 +333,9 @@ class ResponseValidatorService:
 
     def _normalize(self, text: str) -> str:
         normalized = unicodedata.normalize("NFKD", text.lower())
-        normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+        normalized = "".join(
+            char for char in normalized if not unicodedata.combining(char)
+        )
         return re.sub(r"\s+", " ", normalized).strip()
 
     def _token_overlap(self, left: str, right: str) -> float:
@@ -276,4 +343,6 @@ class ResponseValidatorService:
         right_tokens = {item for item in right.split() if len(item) > 3}
         if not left_tokens or not right_tokens:
             return 0.0
-        return len(left_tokens & right_tokens) / min(len(left_tokens), len(right_tokens))
+        return len(left_tokens & right_tokens) / min(
+            len(left_tokens), len(right_tokens)
+        )

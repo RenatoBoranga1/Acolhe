@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.openai.com/v1"
     llm_model: str = "gpt-4.1-mini"
     llm_timeout_seconds: float = 20.0
+    llm_temperature_default: float = 0.66
+    llm_temperature_moderate: float = 0.62
+    llm_temperature_high: float = 0.34
+    llm_temperature_critical: float = 0.24
     prompt_path: str = "app/prompts/acolhe_system_prompt.md"
     primary_user_name: str = "Usuaria Acolhe"
     primary_user_pin: str = Field(default="2468", min_length=4, max_length=8)

@@ -13,8 +13,14 @@ api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
 api_router.include_router(chat_router, prefix="/chat", tags=["chat"])
 api_router.include_router(risk_router, prefix="/chat", tags=["risk"])
-api_router.include_router(journal_router, prefix="/incident-records", tags=["incident-records"])
-api_router.include_router(safety_plan_router, prefix="/safety-plan", tags=["safety-plan"])
-api_router.include_router(support_router, prefix="/trusted-contacts", tags=["trusted-contacts"])
+api_router.include_router(
+    journal_router, prefix="/incident-records", tags=["incident-records"]
+)
+api_router.include_router(
+    safety_plan_router, prefix="/safety-plan", tags=["safety-plan"]
+)
+api_router.include_router(
+    support_router, prefix="/trusted-contacts", tags=["trusted-contacts"]
+)
 api_router.include_router(resources_router, prefix="/resources", tags=["resources"])
 api_router.include_router(settings_router, prefix="/settings", tags=["settings"])

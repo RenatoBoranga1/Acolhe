@@ -47,6 +47,7 @@ class ConversationDto {
     required this.id,
     required this.title,
     required this.lastRiskLevel,
+    required this.createdAt,
     required this.updatedAt,
     required this.discreetMode,
     required this.messages,
@@ -55,6 +56,7 @@ class ConversationDto {
   final String id;
   final String title;
   final String lastRiskLevel;
+  final DateTime createdAt;
   final DateTime updatedAt;
   final bool discreetMode;
   final List<ChatMessageDto> messages;
@@ -66,6 +68,10 @@ class ConversationDto {
       lastRiskLevel: json['last_risk_level'] as String? ??
           json['lastRiskLevel'] as String? ??
           'low',
+      createdAt: DateTime.tryParse(
+            json['created_at'] as String? ?? json['createdAt'] as String? ?? '',
+          ) ??
+          DateTime.now(),
       updatedAt: DateTime.tryParse(
             json['updated_at'] as String? ?? json['updatedAt'] as String? ?? '',
           ) ??
@@ -87,7 +93,7 @@ class ConversationDto {
       lastRiskLevel: RiskLevelX.fromLabel(lastRiskLevel),
       discreetMode: discreetMode,
       messages: messages.map((item) => item.toDomain()).toList(growable: false),
-      createdAt: messages.isEmpty ? updatedAt : messages.first.createdAt,
+      createdAt: createdAt,
       updatedAt: updatedAt,
     );
   }
@@ -221,6 +227,76 @@ class ContextMessageDto {
     return ContextMessageDto(
       role: message.role.name,
       content: message.content,
+    );
+  }
+}
+
+class PaginatedMessagesResponseDto {
+  const PaginatedMessagesResponseDto({
+    required this.conversationId,
+    required this.page,
+    required this.pageSize,
+    required this.total,
+    required this.hasMore,
+    required this.items,
+  });
+
+  final String conversationId;
+  final int page;
+  final int pageSize;
+  final int total;
+  final bool hasMore;
+  final List<ChatMessageDto> items;
+
+  factory PaginatedMessagesResponseDto.fromJson(Map<String, dynamic> json) {
+    return PaginatedMessagesResponseDto(
+      conversationId: json['conversation_id'] as String? ??
+          json['conversationId'] as String? ??
+          '',
+      page: (json['page'] as num?)?.toInt() ?? 1,
+      pageSize: (json['page_size'] as num?)?.toInt() ??
+          (json['pageSize'] as num?)?.toInt() ??
+          40,
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      hasMore: json['has_more'] as bool? ?? json['hasMore'] as bool? ?? false,
+      items: (json['items'] as List<dynamic>? ?? const [])
+          .map((item) =>
+              ChatMessageDto.fromJson(Map<String, dynamic>.from(item as Map)))
+          .toList(growable: false),
+    );
+  }
+
+  ConversationMessagesPage toDomain() {
+    return ConversationMessagesPage(
+      conversationId: conversationId,
+      page: page,
+      pageSize: pageSize,
+      total: total,
+      hasMore: hasMore,
+      items: items.map((item) => item.toDomain()).toList(growable: false),
+    );
+  }
+}
+
+class MessageFeedbackResponseDto {
+  const MessageFeedbackResponseDto({
+    required this.messageId,
+    required this.stored,
+    required this.updatedAt,
+  });
+
+  final String messageId;
+  final bool stored;
+  final DateTime updatedAt;
+
+  factory MessageFeedbackResponseDto.fromJson(Map<String, dynamic> json) {
+    return MessageFeedbackResponseDto(
+      messageId: json['message_id'] as String? ?? json['messageId'] as String,
+      stored: json['stored'] as bool? ?? true,
+      updatedAt: DateTime.tryParse(
+            json['updated_at'] as String? ?? json['updatedAt'] as String? ?? '',
+          ) ??
+          DateTime.now(),
     );
   }
 }

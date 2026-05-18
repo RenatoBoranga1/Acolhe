@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.modules.chat.intelligence.models import (
     ConversationMemory,
@@ -29,7 +29,12 @@ class RiskAssessmentService:
         ),
     }
     HIGH = {
-        "medo imediato": ("estou com medo", "medo de encontrar", "vai me encontrar hoje", "hoje"),
+        "medo imediato": (
+            "estou com medo",
+            "medo de encontrar",
+            "vai me encontrar hoje",
+            "hoje",
+        ),
         "ameaca atual": ("ameac", "disse que vai", "me intimidou"),
         "perseguicao": ("me seguindo", "perseguindo", "esperando na saida", "stalking"),
         "coercao ou chantagem": ("chantagem", "coag", "me obrigou", "me forcou"),
@@ -39,8 +44,20 @@ class RiskAssessmentService:
     MODERATE = {
         "duvida sobre assedio": ("foi assedio", "passou do limite", "estou exagerando"),
         "recorrencia": ("toda semana", "sempre", "varias vezes", "recorrente"),
-        "impacto emocional": ("vergonha", "culpa", "ansiosa", "nao consigo dormir", "abalada"),
-        "evidencias ou registro": ("print", "mensagem", "prova", "evidencia", "registrar"),
+        "impacto emocional": (
+            "vergonha",
+            "culpa",
+            "ansiosa",
+            "nao consigo dormir",
+            "abalada",
+        ),
+        "evidencias ou registro": (
+            "print",
+            "mensagem",
+            "prova",
+            "evidencia",
+            "registrar",
+        ),
     }
 
     def assess(
@@ -53,7 +70,9 @@ class RiskAssessmentService:
         model_signals: Sequence[str] | None = None,
     ) -> RiskAssessmentResult:
         normalized = self._normalize(message)
-        context = self._normalize(" ".join(item.get("content", "") for item in history[-6:]))
+        context = self._normalize(
+            " ".join(item.get("content", "") for item in history[-6:])
+        )
         triggers: list[str] = []
         score = 0.05
 
@@ -152,5 +171,7 @@ class RiskAssessmentService:
 
     def _normalize(self, text: str) -> str:
         normalized = unicodedata.normalize("NFKD", text.lower())
-        normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+        normalized = "".join(
+            char for char in normalized if not unicodedata.combining(char)
+        )
         return re.sub(r"\s+", " ", normalized).strip()

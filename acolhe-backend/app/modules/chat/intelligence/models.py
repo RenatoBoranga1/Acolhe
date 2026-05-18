@@ -4,7 +4,6 @@ from dataclasses import asdict, dataclass, field
 
 from app.modules.risk.schemas import RiskAssessmentResponse
 
-
 RISK_ORDER = {"low": 0, "moderate": 1, "high": 2, "critical": 3}
 
 
@@ -29,7 +28,7 @@ class ConversationMemory:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, payload: dict, *, conversation_id: str) -> "ConversationMemory":
+    def from_dict(cls, payload: dict, *, conversation_id: str) -> ConversationMemory:
         data = dict(payload or {})
         data["conversation_id"] = conversation_id
         known_facts = data.get("known_facts")

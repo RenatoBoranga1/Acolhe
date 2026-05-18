@@ -32,7 +32,9 @@ def create_record(
 
 
 @router.post("/{record_id}/summary", response_model=IncidentSummaryResponse)
-def generate_summary(record_id: str, session: Session = Depends(get_db)) -> IncidentSummaryResponse:
+def generate_summary(
+    record_id: str, session: Session = Depends(get_db)
+) -> IncidentSummaryResponse:
     try:
         return service.generate_summary(session, record_id)
     except ValueError as exc:

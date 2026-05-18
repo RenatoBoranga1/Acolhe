@@ -31,3 +31,21 @@ class ChatSendResult {
   final bool canRetryRemote;
   final String? fallbackReason;
 }
+
+class ConversationMessagesPage {
+  const ConversationMessagesPage({
+    required this.conversationId,
+    required this.page,
+    required this.pageSize,
+    required this.total,
+    required this.hasMore,
+    required this.items,
+  });
+
+  final String conversationId;
+  final int page;
+  final int pageSize;
+  final int total;
+  final bool hasMore;
+  final List<ChatMessageModel> items;
+}

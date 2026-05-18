@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import ForeignKey, Integer, JSON, String, Text
+from sqlalchemy import JSON, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, UUIDTimestampMixin
@@ -9,7 +9,9 @@ from app.models.base import Base, UUIDTimestampMixin
 class SafetyPlan(UUIDTimestampMixin, Base):
     __tablename__ = "safety_plans"
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id"), unique=True, index=True
+    )
     safe_locations: Mapped[list[str]] = mapped_column(JSON, default=list)
     warning_signs: Mapped[list[str]] = mapped_column(JSON, default=list)
     immediate_steps: Mapped[list[str]] = mapped_column(JSON, default=list)

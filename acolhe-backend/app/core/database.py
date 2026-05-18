@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
@@ -25,11 +25,15 @@ def _build_engine(database_url: str, use_static_pool: bool = False) -> Engine:
     return create_engine(database_url, **engine_kwargs)
 
 
-def configure_database(database_url: str | None = None, *, use_static_pool: bool = False) -> None:
+def configure_database(
+    database_url: str | None = None, *, use_static_pool: bool = False
+) -> None:
     global _engine, _session_factory
     target_url = database_url or get_settings().database_url
     _engine = _build_engine(target_url, use_static_pool=use_static_pool)
-    _session_factory = sessionmaker(bind=_engine, autoflush=False, expire_on_commit=False)
+    _session_factory = sessionmaker(
+        bind=_engine, autoflush=False, expire_on_commit=False
+    )
 
 
 def get_engine() -> Engine:

@@ -25,21 +25,45 @@ class RiskService:
         ],
     }
     HIGH_SIGNALS = {
-        "medo imediato": ["estou com medo", "tenho medo", "medo de encontrar", "to com medo"],
-        "perseguicao": ["me seguindo", "me persegue", "perseguindo", "esperando na saida"],
-        "chantagem ou coacao": ["chantagem", "coagindo", "me coagiu", "me obrigou", "me forcou"],
+        "medo imediato": [
+            "estou com medo",
+            "tenho medo",
+            "medo de encontrar",
+            "to com medo",
+        ],
+        "perseguicao": [
+            "me seguindo",
+            "me persegue",
+            "perseguindo",
+            "esperando na saida",
+        ],
+        "chantagem ou coacao": [
+            "chantagem",
+            "coagindo",
+            "me coagiu",
+            "me obrigou",
+            "me forcou",
+        ],
         "violencia fisica": ["me bateu", "agressao", "violencia fisica", "me empurrou"],
         "presenca do agressor": ["ele esta perto", "ela esta perto", "agressor aqui"],
     }
     MODERATE_SIGNALS = {
         "duvida sobre assedio": ["foi assedio", "passou do limite", "nao sei se foi"],
-        "impacto emocional": ["estou abalada", "nao consigo dormir", "ansiosa", "culpa", "vergonha"],
+        "impacto emocional": [
+            "estou abalada",
+            "nao consigo dormir",
+            "ansiosa",
+            "culpa",
+            "vergonha",
+        ],
         "registro": ["registrar", "organizar os fatos", "guardar provas"],
     }
 
     def _normalize(self, text: str) -> str:
         normalized = unicodedata.normalize("NFKD", text.lower())
-        normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+        normalized = "".join(
+            char for char in normalized if not unicodedata.combining(char)
+        )
         return re.sub(r"\s+", " ", normalized).strip()
 
     def assess(self, message: str) -> RiskAssessmentResponse:

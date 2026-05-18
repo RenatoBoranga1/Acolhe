@@ -1,242 +1,341 @@
 # Acolhe
 
-`Acolhe` e um MVP serio de produto social com foco em apoio inicial, organizacao segura de fatos, privacidade e linguagem trauma-informed para pessoas que possam estar vivendo ou tenham vivido assedio sexual.
+Aplicativo mobile e backend de apoio inicial seguro para pessoas que possam estar vivendo ou tenham vivido situacoes de assedio. O projeto combina um app Flutter com um backend FastAPI e uma pipeline conversacional orientada por risco, memoria contextual e principios trauma-informed.
+
+## Visao do produto
+
+O Acolhe foi desenhado para oferecer:
+
+- acolhimento inicial sem julgamento;
+- organizacao segura de fatos e proximos passos;
+- triagem de risco com priorizacao de seguranca;
+- historico privado com cache local seguro;
+- UX discreta, responsiva e preparada para celular, tablet e web.
+
+Importante:
+
+- a assistente virtual nao substitui apoio psicologico, juridico, medico, social ou policial;
+- o produto nao deve ser usado como fonte unica em situacoes de risco iminente;
+- em emergencia, a orientacao correta e procurar ajuda humana imediata e servicos locais.
 
 ## Stack
 
-- Mobile: `Flutter`, `Dart`, `Riverpod`, `go_router`, `flutter_secure_storage`, `local_auth`
-- Backend: `Python`, `FastAPI`, `Pydantic`, `SQLAlchemy`, `Alembic`
-- Banco: `PostgreSQL` em `docker-compose`, com `SQLite` apenas como fallback local para desenvolvimento/testes
-- IA: gateway isolado para LLM com system prompt robusto e fallback deterministico seguro
-- Infra: `Docker`, `docker-compose`, `.env`, logs seguros e testes basicos
+### Mobile
 
-## O que ja esta implementado
+- Flutter
+- Dart
+- Riverpod
+- go_router
+- flutter_secure_storage
+- local_auth
 
-- app Flutter com arquitetura por `core`, `shared` e `features`
-- onboarding com ativacao de modo discreto e biometria
-- autenticacao local por PIN
-- chat principal em estilo app de IA com sidebar/drawer, historico persistido, renomear/excluir conversa, sugestoes rapidas, retry e input fixo
-- tela de ajuda urgente
-- registro privado do ocorrido + resumo cronologico rotulado como rascunho pessoal
-- plano de seguranca
-- rede de apoio com mensagem pronta
-- informacoes e direitos em mock local
-- configuracoes de privacidade
-- backend funcional com rotas REST, seed mock, risco, PIN, journal, support network, resources e settings
-- testes do backend cobrindo autenticacao, chat, risco, journal e contatos
+### Backend
 
-## Estrutura
+- Python 3.11+
+- FastAPI
+- Pydantic
+- SQLAlchemy
+- Alembic
+- PostgreSQL
+
+### IA e seguranca conversacional
+
+- orquestracao isolada de LLM
+- memoria conversacional estruturada
+- classificacao de situacao e risco
+- validacao de resposta
+- fallback deterministico seguro
+
+### Infra
+
+- Docker
+- docker-compose
+- Render-ready deployment
+- testes automatizados para backend e mobile
+
+## Estrutura do repositorio
 
 ```text
 Acolhe/
-├── acolhe-backend/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── integrations/llm/
-│   │   ├── models/
-│   │   ├── modules/
-│   │   ├── prompts/
-│   │   ├── repositories/
-│   │   ├── schemas/
-│   │   └── services/
-│   ├── alembic/
-│   ├── tests/
-│   ├── Dockerfile
-│   └── pyproject.toml
-├── acolhe-mobile/
-│   ├── lib/
-│   │   ├── core/
-│   │   ├── features/
-│   │   └── shared/
-│   ├── test/
-│   └── pubspec.yaml
-├── docs/
-│   ├── architecture.md
-│   └── roadmap.md
-├── .env.example
-└── docker-compose.yml
+|-- acolhe-backend/
+|   |-- app/
+|   |-- alembic/
+|   |-- scripts/
+|   |-- tests/
+|   `-- pyproject.toml
+|-- acolhe-mobile/
+|   |-- lib/
+|   |-- test/
+|   `-- pubspec.yaml
+|-- docs/
+|   |-- architecture.md
+|   |-- chat-intelligence.md
+|   |-- android-studio-run.md
+|   |-- render-deploy.md
+|   `-- roadmap.md
+|-- .env.example
+|-- docker-compose.yml
+|-- setup-mobile.ps1
+|-- start-backend.ps1
+`-- run-tablet.ps1
 ```
 
-## Arquitetura mobile adotada
+## Funcionalidades principais
 
-O `Acolhe` atual usa `Flutter + Riverpod + go_router`, entao a estrategia adotada foi evoluir a base existente para um fluxo `chat-first`, sem trocar de stack.
+- autenticacao local por PIN com suporte a biometria;
+- chat principal com historico, retry e fallback seguro;
+- classificacao de risco em baixo, moderado, alto e critico;
+- CTAs dinamicos para ajuda urgente, plano de seguranca e rede de apoio;
+- registro privado do ocorrido com resumo cronologico;
+- plano de seguranca e contatos confiaveis;
+- conteudo educativo em formato pronto para evolucao por pais/regiao;
+- configuracoes de privacidade, limpeza local e modo discreto.
 
-Principais decisoes:
+## Arquitetura em alto nivel
 
-- manter a persistencia sensivel no aparelho com `flutter_secure_storage`;
-- tratar o chat como workspace principal autenticado;
-- salvar a sessao do chat com conversa ativa + historico;
-- preservar os modulos existentes como areas auxiliares acessiveis por navegacao lateral;
-- reforcar o design system para um visual de aplicativo de IA mais premium e consistente.
+### Mobile
 
-## Execucao local
+- `core/`: configuracao, tema, storage e utilitarios globais;
+- `shared/`: modelos, design system e componentes responsivos;
+- `features/auth/`: PIN, biometria e fluxo de acesso;
+- `features/chat/`: controller, repository, API client, widgets e experiencia principal;
+- `features/journal/`, `safety_plan/`, `support_network/`, `resources/`, `settings/`: modulos auxiliares.
 
-### 1. Backend
+### Backend
 
-Nesta maquina, use o Python embutido do workspace:
+- `app/api/`: agregacao de rotas;
+- `app/modules/`: dominio por funcionalidade;
+- `app/repositories/`: acesso a dados;
+- `app/integrations/llm/`: gateway para modelo;
+- `app/core/`: config, banco, logging e rate limiting;
+- `app/services/`: seed e servicos transversais.
 
-```bash
-cd acolhe-backend
-Copy-Item ..\.env.example .env
-..\start-backend.ps1
-```
+Mais detalhes em [docs/architecture.md](./docs/architecture.md) e [docs/chat-intelligence.md](./docs/chat-intelligence.md).
 
-Ou, se preferir o comando direto:
+## API principal
 
-```bash
-cd acolhe-backend
-& "C:\Users\USER\Documents\Playground\tools\python-3.11.9-embed-amd64\python.exe" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-Ou pelo script, que neste ambiente sobe sem `reload` por padrao:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .\start-backend.ps1
-```
-
-Para acessar pelo celular fisico, use o IP da sua maquina na mesma rede Wi-Fi dentro do app ou no `run-tablet.ps1`. Nao use `localhost`.
-
-Para rodar testes:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .\test-backend.ps1
-```
-
-### 2. Backend com Docker
-
-```bash
-docker compose up --build
-```
-
-Observacao: nesta maquina o comando `docker` nao esta instalado no `PATH`. Se quiser, eu posso te ajudar a preparar a instalacao depois.
-
-### 3. Mobile Flutter
-
-O projeto agora usa um `Flutter` local compartilhado no workspace, detectado automaticamente pelos scripts, entao voce nao precisa instalar o comando globalmente para comecar.
-
-Da raiz do projeto:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .\setup-mobile.ps1
-```
-
-Para listar aparelhos:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .\flutter-local.ps1 devices
-```
-
-Para rodar em um tablet Android fisico:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId SEU_DEVICE_ID
-```
-
-Sem `ApiBaseUrl`, o app sobe em modo demonstracao com dados mock locais.
-Se quiser apontar o tablet para o backend rodando no computador, use o IP local da sua maquina na mesma rede:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId SEU_DEVICE_ID -ApiBaseUrl http://SEU_IP_LOCAL:8000
-```
-
-Importante: `SEU_DEVICE_ID` e `SEU_IP_LOCAL` sao exemplos. Nao use os caracteres `<` e `>` no PowerShell.
-
-Quando `API_BASE_URL` estiver configurado, o `ChatController` usa o backend FastAPI real para listar conversas, criar nova conversa e enviar mensagens. O fallback local continua existindo apenas para modo demonstracao ou indisponibilidade temporaria da API.
-
-Para usar especificamente o botao `Run` do Android Studio, veja [docs/android-studio-run.md](./docs/android-studio-run.md).
-
-Para entender a nova pipeline inteligente do chat, veja [docs/chat-intelligence.md](./docs/chat-intelligence.md).
-
-Se quiser checar rapidamente o que falta no ambiente:
-
-```bash
-powershell -ExecutionPolicy Bypass -File .\check-prereqs.ps1
-```
-
-## Variaveis de ambiente
-
-Veja [`.env.example`](./.env.example).
-
-Principais chaves:
-
-- `DATABASE_URL`
-- `LLM_ENABLED`
-- `LLM_API_KEY`
-- `LLM_BASE_URL`
-- `LLM_MODEL`
-- `PRIMARY_USER_PIN`
-
-## Deploy no Render
-
-O backend ja esta preparado para subir no Render com Blueprint:
-
-- arquivo [render.yaml](./render.yaml)
-- guia [docs/render-deploy.md](./docs/render-deploy.md)
-- start seguro com migracoes em [render-start.sh](./acolhe-backend/scripts/render-start.sh)
-
-Arquitetura recomendada nesta configuracao:
-
-- `Render Web Service` para a API FastAPI
-- `Render Postgres` para o banco
-
-Observacao importante:
-
-- o `render.yaml` usa `free` por padrao para facilitar teste inicial;
-- para uso serio do `Acolhe`, prefira trocar depois para planos pagos no Render.
-
-## Rotas principais da API
+### Autenticacao
 
 - `POST /api/v1/auth/pin/setup`
 - `POST /api/v1/auth/pin/verify`
 - `GET /api/v1/auth/status`
-- `POST /api/v1/chat/message`
-- `POST /api/v1/chat/risk-assessment`
+
+### Chat
+
 - `GET /api/v1/chat/conversations`
+- `GET /api/v1/chat/conversations/{id}`
+- `POST /api/v1/chat/conversations`
+- `PATCH /api/v1/chat/conversations/{id}`
+- `DELETE /api/v1/chat/conversations/{id}`
+- `GET /api/v1/chat/conversations/{id}/messages?page=1&page_size=40`
+- `POST /api/v1/chat/message`
+- `POST /api/v1/chat/messages/{id}/feedback`
+
+### Outros modulos
+
 - `POST /api/v1/incident-records`
 - `POST /api/v1/incident-records/{id}/summary`
 - `GET /api/v1/trusted-contacts`
 - `POST /api/v1/trusted-contacts`
 - `GET /api/v1/resources`
-- `GET/POST /api/v1/safety-plan`
-- `GET/POST /api/v1/settings`
-- `GET /api/v1/settings/export`
-- `DELETE /api/v1/settings/purge`
+- `GET /api/v1/safety-plan`
+- `POST /api/v1/safety-plan`
+- `GET /api/v1/settings`
+- `POST /api/v1/settings`
 
-## Seguranca e privacidade
+## Variaveis de ambiente
 
-- PIN local protegido por hash e armazenamento seguro no mobile
-- dados sensiveis armazenados localmente via `flutter_secure_storage`
-- biometria opcional
-- modo discreto com nome alternativo na interface
-- tela neutra de privacidade e saida rapida
-- classificador de risco antes da resposta da IA
-- logs do backend sem payload sensivel
-- sistema preparado para TLS, criptografia em repouso e evolucao com rate limit/cache
+Use [`.env.example`](./.env.example) como base.
 
-## Testes executados
+Chaves importantes:
 
-Backend:
+- `DATABASE_URL`
+- `CORS_ORIGINS`
+- `PRIMARY_USER_PIN`
+- `LLM_ENABLED`
+- `LLM_API_KEY`
+- `LLM_MODEL`
+- `LLM_TEMPERATURE_DEFAULT`
+- `LLM_TEMPERATURE_MODERATE`
+- `LLM_TEMPERATURE_HIGH`
+- `LLM_TEMPERATURE_CRITICAL`
 
-```bash
+## Como rodar
+
+### Windows: backend local
+
+```powershell
+cd acolhe-backend
+Copy-Item ..\.env.example .env
+powershell -ExecutionPolicy Bypass -File ..\start-backend.ps1
+```
+
+API esperada em:
+
+```text
+http://127.0.0.1:8000
+```
+
+Healthcheck:
+
+```text
+http://127.0.0.1:8000/health
+```
+
+### Docker: backend + Postgres
+
+```powershell
+docker compose up --build
+```
+
+Nesse modo, o `docker-compose.yml` ja injeta a configuracao de banco adequada.
+
+### Flutter: dependencias e execucao
+
+Preparacao do workspace:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup-mobile.ps1
+```
+
+Listar dispositivos:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\flutter-local.ps1 devices
+```
+
+Rodar no Android:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId SEU_DEVICE_ID
+```
+
+Rodar apontando para backend local na mesma rede:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run-tablet.ps1 -DeviceId SEU_DEVICE_ID -ApiBaseUrl http://SEU_IP_LOCAL:8000
+```
+
+Observacoes:
+
+- nao use `localhost` dentro do celular fisico;
+- use o IP local do computador na mesma rede Wi-Fi;
+- para Android Studio com botao `Run`, veja [docs/android-studio-run.md](./docs/android-studio-run.md).
+
+## Integracao mobile com backend
+
+Quando `API_BASE_URL` estiver configurado, o app passa a usar o backend real como fluxo principal para:
+
+- listar conversas;
+- obter conversa individual;
+- criar, renomear e excluir conversa;
+- enviar mensagem;
+- paginar historico;
+- receber risco, CTAs, tipo de situacao, modo de resposta e contexto.
+
+Se a API estiver indisponivel:
+
+- o app mantem cache local seguro;
+- o chat usa fallback local seguro apenas quando necessario;
+- o controller expõe status de sincronizacao e retry amigavel.
+
+## Qualidade e validacao
+
+### Backend
+
+```powershell
+cd acolhe-backend
 python -m pytest -q
 ```
 
-Resultado nesta workspace: `5 passed`.
+### Mobile
 
-## Limitacoes honestas desta entrega
+```powershell
+cd acolhe-mobile
+flutter test
+```
 
-- o backend foi validado com testes automatizados;
-- o app Flutter foi implementado de forma concreta, com SDK local incluido no workspace, mas eu nao consegui validar `flutter run` neste sandbox;
-- o projeto mobile esta preparado para bootstrap local com `setup-mobile.ps1` e execucao no tablet com `run-tablet.ps1`.
+### Formatacao
 
-## Decisoes tecnicas importantes
+Backend:
 
-- risco alto/critico interrompe o fluxo conversacional e prioriza CTAs de seguranca;
-- LLM fica atras de uma camada de orquestracao para permitir fallback seguro, auditoria e evolucao;
-- conteudos educativos ficam separados e prontos para migrar para CMS/API por regiao;
-- `SQLite` existe apenas para desenvolvimento rapido e testes locais; o alvo operacional do backend e `PostgreSQL`.
+```powershell
+cd acolhe-backend
+python -m black .
+python -m ruff check . --fix
+```
+
+Mobile:
+
+```powershell
+cd acolhe-mobile
+dart format .
+```
+
+## Seguranca e privacidade
+
+- cache local sensivel protegido por `flutter_secure_storage`;
+- PIN armazenado como hash no backend;
+- modo discreto e controles de exposicao na interface;
+- ownership de conversas garantido no backend pelo usuario corrente;
+- preparacao para autenticacao real por usuario via camada de contexto;
+- rate limiting aplicado no backend;
+- logs tecnicos sem payload integral de mensagens sensiveis;
+- feedback de respostas armazenado sem expor conteudo da conversa em logs.
+
+## Deploy
+
+O backend esta preparado para Render.
+
+Arquivos relevantes:
+
+- [render.yaml](./render.yaml)
+- [docs/render-deploy.md](./docs/render-deploy.md)
+- [acolhe-backend/scripts/render-start.sh](./acolhe-backend/scripts/render-start.sh)
+
+## Como contribuir
+
+1. Abra uma issue com contexto claro do problema ou melhoria.
+2. Trabalhe em branch propria.
+3. Mantenha mudancas pequenas e com testes quando possivel.
+4. Rode formatacao e testes antes de abrir PR.
+5. Evite incluir dados sensiveis, chaves reais ou caminhos locais da sua maquina.
+
+Boas praticas esperadas:
+
+- commits objetivos;
+- codigo legivel e modular;
+- textos responsaveis do ponto de vista etico;
+- nenhuma funcionalidade deve incentivar exposicao desnecessaria de relatos.
+
+## Limitacoes e responsabilidade etica
+
+Este repositorio nao deve ser interpretado como ferramenta clinica, juridica ou policial.
+
+Limitacoes atuais:
+
+- nao substitui atendimento humano especializado;
+- a autenticacao ainda esta em transicao para um modelo completo por usuario;
+- o produto depende de configuracao responsavel de infraestrutura, TLS e segredo de ambiente para uso publico;
+- respostas de IA continuam sujeitas a validacao, fallback e supervisao de produto.
+
+Responsabilidade etica:
+
+- nao usar o sistema para extrair relatos sensiveis sem consentimento;
+- nao prometer sigilo absoluto em cenarios de risco de vida;
+- sempre priorizar seguranca fisica e emocional acima de completude conversacional;
+- revisar qualquer expansao de produto com enfoque de privacidade por padrao.
 
 ## Roadmap
 
-Veja [docs/roadmap.md](./docs/roadmap.md).
+Resumo do proximo ciclo:
+
+- autenticacao real por usuario e sessao;
+- deploy publico estavel com Postgres dedicado;
+- multilanguage e conteudo por regiao;
+- voz e acessibilidade ampliada;
+- exportacao segura de relato;
+- painel administrativo para conteudo educativo;
+- observabilidade privacy-first.
+
+Detalhes em [docs/roadmap.md](./docs/roadmap.md).

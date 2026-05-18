@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from app.modules.chat.intelligence.conversation_memory_service import ConversationMemoryService
+from app.modules.chat.intelligence.conversation_memory_service import (
+    ConversationMemoryService,
+)
 from app.modules.chat.intelligence.models import (
     ConversationMemory,
     PromptBundle,
@@ -113,7 +115,9 @@ class PromptBuilderService:
         situation_prompt = (
             "Tipo de situacao atual: "
             f"{situation.type}; confianca={situation.confidence}; sinais={', '.join(situation.signals)}. "
-            + self.SITUATION_STRATEGIES.get(situation.type, self.SITUATION_STRATEGIES["initial_disclosure"])
+            + self.SITUATION_STRATEGIES.get(
+                situation.type, self.SITUATION_STRATEGIES["initial_disclosure"]
+            )
         )
         specificity_prompt = self._specificity_prompt(
             memory=memory,
@@ -121,7 +125,9 @@ class PromptBuilderService:
             situation=situation,
             response_mode=response_mode,
         )
-        mode_prompt = self.MODE_INSTRUCTIONS.get(response_mode.name, self.MODE_INSTRUCTIONS["calm_support"])
+        mode_prompt = self.MODE_INSTRUCTIONS.get(
+            response_mode.name, self.MODE_INSTRUCTIONS["calm_support"]
+        )
         anti_repetition_prompt = (
             "Evite repetir aberturas, frases e estruturas recentes. "
             f"Aberturas recentes a evitar: {' | '.join(recent_assistant_openings) if recent_assistant_openings else 'nenhuma'}."
@@ -160,7 +166,11 @@ class PromptBuilderService:
         situation: SituationClassification,
         response_mode: ResponseMode,
     ) -> str:
-        facts = "; ".join(memory.known_facts[-4:]) if memory.known_facts else "nenhum fato estruturado ainda"
+        facts = (
+            "; ".join(memory.known_facts[-4:])
+            if memory.known_facts
+            else "nenhum fato estruturado ainda"
+        )
         shared_context = (
             "Instrucoes de especificidade: evite resposta intercambiavel. "
             f"Fatos conhecidos: {facts}. "
@@ -196,7 +206,8 @@ class PromptBuilderService:
         )
         risk_requirement = (
             "Como o risco e alto/critico, nao faca analise longa: cheque seguranca e indique ajuda humana imediata."
-            if risk.level in {"high", "critical"} or response_mode.name == "safety_first"
+            if risk.level in {"high", "critical"}
+            or response_mode.name == "safety_first"
             else "Como o risco nao e alto, mantenha acolhimento e orientacao sem alarmismo."
         )
         return f"{shared_context} {situation_requirements} {risk_requirement}"

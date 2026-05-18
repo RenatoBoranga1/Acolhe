@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "acolhe-backend"
 version = "0.1.0"
-description = "Backend do Acolhe: apoio inicial seguro, risco e organização de relatos."
+description = "Backend do Acolhe: apoio inicial seguro, risco e organizacao de relatos."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -22,6 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "black>=24.10.0",
     "pytest>=8.3.0",
     "ruff>=0.8.0",
 ]
@@ -36,3 +37,4 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008", "E501"]

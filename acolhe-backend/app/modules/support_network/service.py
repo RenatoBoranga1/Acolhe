@@ -3,7 +3,10 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.models import TrustedContact, User
-from app.modules.support_network.schemas import TrustedContactCreate, TrustedContactResponse
+from app.modules.support_network.schemas import (
+    TrustedContactCreate,
+    TrustedContactResponse,
+)
 from app.repositories.auth_repository import AuthRepository
 from app.repositories.support_repository import SupportRepository
 
@@ -33,9 +36,14 @@ class SupportNetworkService:
 
     def list_contacts(self, session: Session) -> list[TrustedContactResponse]:
         user = self._user(session)
-        return [self._serialize(item) for item in self.repository.list_contacts(session, user.id)]
+        return [
+            self._serialize(item)
+            for item in self.repository.list_contacts(session, user.id)
+        ]
 
-    def create_contact(self, session: Session, payload: TrustedContactCreate) -> TrustedContactResponse:
+    def create_contact(
+        self, session: Session, payload: TrustedContactCreate
+    ) -> TrustedContactResponse:
         user = self._user(session)
         contact = TrustedContact(user_id=user.id, **payload.model_dump())
         contact = self.repository.save_contact(session, contact)

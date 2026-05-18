@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Sequence
+from collections.abc import Sequence
 
 from app.models import Message
 from app.modules.chat.intelligence.models import (
@@ -32,12 +32,16 @@ class ConversationMemoryService:
         "stranger": ("desconhecido", "estranho"),
     }
 
-    def load(self, *, conversation_id: str, messages: Sequence[Message]) -> ConversationMemory:
+    def load(
+        self, *, conversation_id: str, messages: Sequence[Message]
+    ) -> ConversationMemory:
         for message in reversed(messages):
             metadata = message.message_metadata or {}
             snapshot = metadata.get(self.MEMORY_KEY)
             if isinstance(snapshot, dict):
-                return ConversationMemory.from_dict(snapshot, conversation_id=conversation_id)
+                return ConversationMemory.from_dict(
+                    snapshot, conversation_id=conversation_id
+                )
         return ConversationMemory(conversation_id=conversation_id)
 
     def update(
@@ -53,16 +57,27 @@ class ConversationMemoryService:
         normalized = self._normalize(latest_message)
         known_facts = list(memory.known_facts)
 
-        emotional_state = self._detect_emotional_state(normalized) or memory.user_emotional_state
-        aggressor_relation = self._detect_relation(normalized) or memory.aggressor_relation
-        repeated_behavior = self._detect_repetition(normalized) or memory.repeated_behavior
-        support_status = self._detect_support_status(normalized) or memory.support_network_status
+        emotional_state = (
+            self._detect_emotional_state(normalized) or memory.user_emotional_state
+        )
+        aggressor_relation = (
+            self._detect_relation(normalized) or memory.aggressor_relation
+        )
+        repeated_behavior = (
+            self._detect_repetition(normalized) or memory.repeated_behavior
+        )
+        support_status = (
+            self._detect_support_status(normalized) or memory.support_network_status
+        )
         wants_to_report = self._detect_reporting(normalized) or memory.wants_to_report
         evidence_status = self._detect_evidence(normalized) or memory.evidence_status
         immediate_fear = (
             memory.immediate_fear
             or risk.level in {"high", "critical"}
-            or any(term in normalized for term in ("medo de encontrar", "vai me encontrar", "hoje", "agora"))
+            or any(
+                term in normalized
+                for term in ("medo de encontrar", "vai me encontrar", "hoje", "agora")
+            )
         )
 
         for fact in self._extract_facts(
@@ -103,7 +118,11 @@ class ConversationMemoryService:
         return updated
 
     def to_prompt_context(self, memory: ConversationMemory) -> str:
-        facts = "; ".join(memory.known_facts[-8:]) if memory.known_facts else "sem fatos estruturados anteriores"
+        facts = (
+            "; ".join(memory.known_facts[-8:])
+            if memory.known_facts
+            else "sem fatos estruturados anteriores"
+        )
         return (
             "Resumo estruturado da conversa: "
             f"estado_emocional={memory.user_emotional_state}; "
@@ -133,34 +152,72 @@ class ConversationMemoryService:
         return None
 
     def _detect_repetition(self, normalized: str) -> str | None:
-        if any(term in normalized for term in ("toda semana", "sempre", "varias vezes", "todo dia", "recorrente")):
+        if any(
+            term in normalized
+            for term in (
+                "toda semana",
+                "sempre",
+                "varias vezes",
+                "todo dia",
+                "recorrente",
+            )
+        ):
             return "yes"
-        if any(term in normalized for term in ("primeira vez", "uma vez", "foi so uma vez")):
+        if any(
+            term in normalized for term in ("primeira vez", "uma vez", "foi so uma vez")
+        ):
             return "no"
         return None
 
     def _detect_support_status(self, normalized: str) -> str | None:
-        if any(term in normalized for term in ("estou sozinha", "nao tenho ninguem", "sem apoio")):
+        if any(
+            term in normalized
+            for term in ("estou sozinha", "nao tenho ninguem", "sem apoio")
+        ):
             return "isolated"
-        if any(term in normalized for term in ("amiga", "mae", "irma", "pessoa de confianca", "rede de apoio")):
+        if any(
+            term in normalized
+            for term in ("amiga", "mae", "irma", "pessoa de confianca", "rede de apoio")
+        ):
             return "mentioned"
-        if any(term in normalized for term in ("quero falar com alguem", "contar para alguem", "pedir apoio")):
+        if any(
+            term in normalized
+            for term in ("quero falar com alguem", "contar para alguem", "pedir apoio")
+        ):
             return "seeking"
         return None
 
     def _detect_reporting(self, normalized: str) -> str | None:
         if any(term in normalized for term in ("quero denunciar", "vou denunciar")):
             return "yes"
-        if any(term in normalized for term in ("nao quero denunciar", "nao vou denunciar")):
+        if any(
+            term in normalized for term in ("nao quero denunciar", "nao vou denunciar")
+        ):
             return "no"
-        if any(term in normalized for term in ("denunciar", "delegacia", "boletim", "nao consigo decidir")):
+        if any(
+            term in normalized
+            for term in ("denunciar", "delegacia", "boletim", "nao consigo decidir")
+        ):
             return "unsure"
         return None
 
     def _detect_evidence(self, normalized: str) -> str | None:
-        if any(term in normalized for term in ("print", "prints", "mensagem", "audio", "prova", "evidencia", "video")):
+        if any(
+            term in normalized
+            for term in (
+                "print",
+                "prints",
+                "mensagem",
+                "audio",
+                "prova",
+                "evidencia",
+                "video",
+            )
+        ):
             return "mentioned"
-        if any(term in normalized for term in ("sem provas", "nao tenho prova", "apaguei")):
+        if any(
+            term in normalized for term in ("sem provas", "nao tenho prova", "apaguei")
+        ):
             return "not_available"
         return None
 
@@ -176,7 +233,10 @@ class ConversationMemoryService:
         immediate_fear: bool,
         situation_type: str,
     ) -> list[str]:
-        facts = [f"tipo atual: {situation_type}", f"estado emocional: {emotional_state}"]
+        facts = [
+            f"tipo atual: {situation_type}",
+            f"estado emocional: {emotional_state}",
+        ]
         if aggressor_relation != "unknown":
             facts.append(f"relacao mencionada: {aggressor_relation}")
         if repeated_behavior != "unknown":
@@ -234,5 +294,7 @@ class ConversationMemoryService:
 
     def _normalize(self, text: str) -> str:
         normalized = unicodedata.normalize("NFKD", text.lower())
-        normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+        normalized = "".join(
+            char for char in normalized if not unicodedata.combining(char)
+        )
         return re.sub(r"\s+", " ", normalized).strip()

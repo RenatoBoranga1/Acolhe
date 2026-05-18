@@ -10,7 +10,9 @@ class JournalRepository:
     def list_records(self, session: Session, user_id: str) -> list[IncidentRecord]:
         stmt = (
             select(IncidentRecord)
-            .where(IncidentRecord.user_id == user_id, IncidentRecord.is_deleted.is_(False))
+            .where(
+                IncidentRecord.user_id == user_id, IncidentRecord.is_deleted.is_(False)
+            )
             .order_by(IncidentRecord.created_at.desc())
         )
         return list(session.scalars(stmt))

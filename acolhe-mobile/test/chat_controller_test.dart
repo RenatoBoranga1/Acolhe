@@ -190,7 +190,7 @@ class _FakeChatRepository extends ChatRepository {
         );
 
   final bool remoteEnabled;
-  final ConversationModel _initialConversation;
+  ConversationModel _initialConversation;
   final Queue<ChatSendResult> _responses;
   final List<List<ChatMessageModel>> sentHistories = [];
 
@@ -207,8 +207,44 @@ class _FakeChatRepository extends ChatRepository {
     required String title,
     required bool discreetMode,
   }) async {
-    return _initialConversation.copyWith(
-        title: title, discreetMode: discreetMode);
+    _initialConversation = _initialConversation.copyWith(
+      title: title,
+      discreetMode: discreetMode,
+    );
+    return _initialConversation;
+  }
+
+  @override
+  Future<ConversationModel> getConversation(String conversationId) async {
+    return _initialConversation;
+  }
+
+  @override
+  Future<ConversationModel> renameConversation({
+    required String conversationId,
+    required String title,
+  }) async {
+    _initialConversation = _initialConversation.copyWith(title: title);
+    return _initialConversation;
+  }
+
+  @override
+  Future<void> deleteConversation(String conversationId) async {}
+
+  @override
+  Future<ConversationMessagesPage> listMessages({
+    required String conversationId,
+    int page = 1,
+    int pageSize = 40,
+  }) async {
+    return ConversationMessagesPage(
+      conversationId: conversationId,
+      page: page,
+      pageSize: pageSize,
+      total: _initialConversation.messages.length,
+      hasMore: false,
+      items: _initialConversation.messages,
+    );
   }
 
   @override

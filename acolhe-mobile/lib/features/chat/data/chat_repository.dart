@@ -44,6 +44,51 @@ class ChatRepository {
     return conversation.toDomain();
   }
 
+  Future<ConversationModel> getConversation(String conversationId) async {
+    final conversation = await _apiClient.getConversation(conversationId);
+    return conversation.toDomain();
+  }
+
+  Future<ConversationModel> renameConversation({
+    required String conversationId,
+    required String title,
+  }) async {
+    final conversation = await _apiClient.updateConversation(
+      conversationId: conversationId,
+      title: title,
+    );
+    return conversation.toDomain();
+  }
+
+  Future<void> deleteConversation(String conversationId) {
+    return _apiClient.deleteConversation(conversationId);
+  }
+
+  Future<ConversationMessagesPage> listMessages({
+    required String conversationId,
+    int page = 1,
+    int pageSize = 40,
+  }) async {
+    final response = await _apiClient.listMessages(
+      conversationId: conversationId,
+      page: page,
+      pageSize: pageSize,
+    );
+    return response.toDomain();
+  }
+
+  Future<void> sendMessageFeedback({
+    required String messageId,
+    required String rating,
+    String? note,
+  }) async {
+    await _apiClient.sendMessageFeedback(
+      messageId: messageId,
+      rating: rating,
+      note: note,
+    );
+  }
+
   Future<ChatSendResult> sendMessage({
     required String? conversationId,
     required String message,

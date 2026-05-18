@@ -12,9 +12,12 @@ class MessageList extends StatelessWidget {
     required this.risk,
     required this.ctas,
     required this.isTyping,
+    required this.isLoadingHistory,
+    required this.hasMoreMessages,
     required this.scrollController,
     required this.onNavigate,
     required this.bottomPadding,
+    required this.onLoadOlderMessages,
     super.key,
     this.situationType,
     this.responseMode,
@@ -27,9 +30,12 @@ class MessageList extends StatelessWidget {
   final RiskAssessment risk;
   final List<String> ctas;
   final bool isTyping;
+  final bool isLoadingHistory;
+  final bool hasMoreMessages;
   final ScrollController scrollController;
   final ValueChanged<String> onNavigate;
   final double bottomPadding;
+  final VoidCallback onLoadOlderMessages;
   final String? situationType;
   final String? responseMode;
   final Map<String, dynamic>? conversationContext;
@@ -53,6 +59,27 @@ class MessageList extends StatelessWidget {
             icon: Icons.info_outline_rounded,
           ),
           const SizedBox(height: 12),
+          if (hasMoreMessages || isLoadingHistory) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: isLoadingHistory ? null : onLoadOlderMessages,
+                icon: isLoadingHistory
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.expand_less_rounded),
+                label: Text(
+                  isLoadingHistory
+                      ? 'Carregando mensagens anteriores...'
+                      : 'Carregar mensagens anteriores',
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           if (showRiskBanner) ...[
             AdaptiveRiskBanner(risk: risk, onNavigate: onNavigate),
             const SizedBox(height: 12),

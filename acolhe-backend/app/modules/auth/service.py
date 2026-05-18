@@ -27,7 +27,9 @@ class AuthService:
             raise ValueError("Usuaria nao encontrada.")
         return self._snapshot(user)
 
-    def setup_pin(self, session: Session, *, pin: str, display_name: str | None) -> UserSnapshot:
+    def setup_pin(
+        self, session: Session, *, pin: str, display_name: str | None
+    ) -> UserSnapshot:
         user = self.repository.get_primary_user(session)
         if user is None:
             raise ValueError("Usuaria nao encontrada.")

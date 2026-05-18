@@ -4,7 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.modules.settings.schemas import ExportBundleResponse, SettingsResponse, SettingsUpdateRequest
+from app.modules.settings.schemas import (
+    ExportBundleResponse,
+    SettingsResponse,
+    SettingsUpdateRequest,
+)
 from app.modules.settings.service import SettingsService
 
 router = APIRouter()

@@ -1,14 +1,23 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from sqlalchemy.orm import Session
 
 from app.models import Conversation, Message, User
-from app.modules.chat.intelligence.response_orchestrator_service import ResponseOrchestratorService
+from app.modules.chat.intelligence.response_orchestrator_service import (
+    ResponseOrchestratorService,
+)
 from app.modules.chat.schemas import (
     ChatMessageResponse,
     ContextMessagePayload,
+    ConversationDeleteResponse,
     ConversationPayload,
+    MessageFeedbackRequest,
+    MessageFeedbackResponse,
     MessagePayload,
+    PaginatedMessagesResponse,
+    UpdateConversationRequest,
 )
 from app.repositories.auth_repository import AuthRepository
 from app.repositories.chat_repository import ChatRepository
@@ -20,8 +29,14 @@ class ChatService:
         self.auth_repository = AuthRepository()
         self.response_orchestrator = ResponseOrchestratorService()
 
-    def _current_user(self, session: Session) -> User:
-        user = self.auth_repository.get_primary_user(session)
+    def _current_user(
+        self, session: Session, requested_user_id: str | None = None
+    ) -> User:
+        user = (
+            self.auth_repository.get_user_by_id(session, requested_user_id)
+            if requested_user_id
+            else self.auth_repository.get_primary_user(session)
+        )
         if user is None:
             raise ValueError("Usuaria nao encontrada.")
         return user
@@ -35,27 +50,84 @@ class ChatService:
             created_at=message.created_at,
         )
 
-    def _conversation_payload(self, conversation: Conversation, messages: list[Message]) -> ConversationPayload:
+    def _conversation_payload(
+        self, conversation: Conversation, messages: list[Message]
+    ) -> ConversationPayload:
         return ConversationPayload(
             id=conversation.id,
             title=conversation.title,
             last_risk_level=conversation.last_risk_level,
+            created_at=conversation.created_at,
             updated_at=conversation.updated_at,
             discreet_mode=conversation.discreet_mode,
             messages=[self._message_payload(message) for message in messages],
         )
 
-    def list_conversations(self, session: Session) -> list[ConversationPayload]:
-        user = self._current_user(session)
+    def _conversation_or_error(
+        self,
+        session: Session,
+        *,
+        user_id: str,
+        conversation_id: str,
+    ) -> Conversation:
+        conversation = self.chat_repository.get_conversation(
+            session,
+            conversation_id,
+            user_id=user_id,
+        )
+        if conversation is None:
+            raise ValueError("Conversa nao encontrada.")
+        return conversation
+
+    def list_conversations(
+        self,
+        session: Session,
+        *,
+        user_id: str | None = None,
+    ) -> list[ConversationPayload]:
+        user = self._current_user(session, user_id)
         conversations = self.chat_repository.list_conversations(session, user.id)
         payloads: list[ConversationPayload] = []
         for conversation in conversations:
-            messages = self.chat_repository.list_messages(session, conversation.id)
+            messages = self.chat_repository.list_messages_page(
+                session,
+                conversation.id,
+                page=1,
+                page_size=6,
+            )
             payloads.append(self._conversation_payload(conversation, messages))
         return payloads
 
-    def new_conversation(self, session: Session, title: str, discreet_mode: bool) -> ConversationPayload:
-        user = self._current_user(session)
+    def get_conversation(
+        self,
+        session: Session,
+        *,
+        conversation_id: str,
+        user_id: str | None = None,
+    ) -> ConversationPayload:
+        user = self._current_user(session, user_id)
+        conversation = self._conversation_or_error(
+            session,
+            user_id=user.id,
+            conversation_id=conversation_id,
+        )
+        messages = self.chat_repository.list_messages_page(
+            session,
+            conversation.id,
+            page=1,
+            page_size=40,
+        )
+        return self._conversation_payload(conversation, messages)
+
+    def new_conversation(
+        self,
+        session: Session,
+        title: str,
+        discreet_mode: bool,
+        *,
+        user_id: str | None = None,
+    ) -> ConversationPayload:
+        user = self._current_user(session, user_id)
         conversation = self.chat_repository.create_conversation(
             session,
             user.id,
@@ -63,6 +135,112 @@ class ChatService:
             discreet_mode=discreet_mode,
         )
         return self._conversation_payload(conversation, [])
+
+    def update_conversation(
+        self,
+        session: Session,
+        *,
+        conversation_id: str,
+        payload: UpdateConversationRequest,
+        user_id: str | None = None,
+    ) -> ConversationPayload:
+        user = self._current_user(session, user_id)
+        conversation = self._conversation_or_error(
+            session,
+            user_id=user.id,
+            conversation_id=conversation_id,
+        )
+        updated = self.chat_repository.update_conversation(
+            session,
+            conversation,
+            title=payload.title.strip() if payload.title else None,
+            discreet_mode=payload.discreet_mode,
+        )
+        messages = self.chat_repository.list_messages_page(
+            session,
+            updated.id,
+            page=1,
+            page_size=40,
+        )
+        return self._conversation_payload(updated, messages)
+
+    def delete_conversation(
+        self,
+        session: Session,
+        *,
+        conversation_id: str,
+        user_id: str | None = None,
+    ) -> ConversationDeleteResponse:
+        user = self._current_user(session, user_id)
+        conversation = self._conversation_or_error(
+            session,
+            user_id=user.id,
+            conversation_id=conversation_id,
+        )
+        self.chat_repository.delete_conversation(session, conversation)
+        return ConversationDeleteResponse(conversation_id=conversation_id)
+
+    def list_messages(
+        self,
+        session: Session,
+        *,
+        conversation_id: str,
+        page: int,
+        page_size: int,
+        user_id: str | None = None,
+    ) -> PaginatedMessagesResponse:
+        user = self._current_user(session, user_id)
+        conversation = self._conversation_or_error(
+            session,
+            user_id=user.id,
+            conversation_id=conversation_id,
+        )
+        safe_page_size = min(max(page_size, 1), 100)
+        items = self.chat_repository.list_messages_page(
+            session,
+            conversation.id,
+            page=page,
+            page_size=safe_page_size,
+        )
+        total = self.chat_repository.count_messages(session, conversation.id)
+        return PaginatedMessagesResponse(
+            conversation_id=conversation.id,
+            page=page,
+            page_size=safe_page_size,
+            total=total,
+            has_more=(page * safe_page_size) < total,
+            items=[self._message_payload(item) for item in items],
+        )
+
+    def leave_feedback(
+        self,
+        session: Session,
+        *,
+        message_id: str,
+        payload: MessageFeedbackRequest,
+        user_id: str | None = None,
+    ) -> MessageFeedbackResponse:
+        user = self._current_user(session, user_id)
+        message = self.chat_repository.get_message(session, message_id, user_id=user.id)
+        if message is None:
+            raise ValueError("Mensagem nao encontrada.")
+
+        feedback_entry = {
+            "rating": payload.rating,
+            "note": (payload.note or "").strip(),
+            "submitted_at": datetime.now(UTC).isoformat(),
+        }
+        metadata = dict(message.message_metadata or {})
+        existing_feedback = list(metadata.get("feedback") or [])
+        existing_feedback.append(feedback_entry)
+        metadata["feedback"] = existing_feedback
+        metadata["feedback_summary"] = payload.rating
+        updated = self.chat_repository.update_message_metadata(
+            session, message, metadata
+        )
+        return MessageFeedbackResponse(
+            message_id=updated.id, updated_at=updated.updated_at
+        )
 
     def send_message(
         self,
@@ -72,10 +250,17 @@ class ChatService:
         message: str,
         discreet_mode: bool,
         client_history: list[ContextMessagePayload] | None = None,
+        user_id: str | None = None,
     ) -> ChatMessageResponse:
-        user = self._current_user(session)
+        user = self._current_user(session, user_id)
         conversation = (
-            self.chat_repository.get_conversation(session, conversation_id) if conversation_id else None
+            self.chat_repository.get_conversation(
+                session,
+                conversation_id,
+                user_id=user.id,
+            )
+            if conversation_id
+            else None
         )
         if conversation is None:
             conversation = self.chat_repository.create_conversation(
@@ -92,7 +277,9 @@ class ChatService:
             content=message,
             risk_level="low",
         )
-        stored_messages = self.chat_repository.list_messages(session, conversation.id, limit=50)
+        stored_messages = self.chat_repository.list_messages(
+            session, conversation.id, limit=50
+        )
         request_history = [
             {"role": item.role, "content": item.content}
             for item in (client_history or [])
@@ -120,7 +307,9 @@ class ChatService:
             recommended_actions=api_risk.recommended_actions,
             requires_immediate_action=api_risk.requires_immediate_action,
         )
-        self.chat_repository.update_conversation_risk(session, conversation, api_risk.level)
+        self.chat_repository.update_conversation_risk(
+            session, conversation, api_risk.level
+        )
         assistant_message = self.chat_repository.add_message(
             session,
             conversation_id=conversation.id,

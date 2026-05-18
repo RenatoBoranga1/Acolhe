@@ -37,6 +37,7 @@ class ChatState {
     required this.conversations,
     required this.activeConversationId,
     required this.isTyping,
+    required this.isLoadingHistory,
     required this.latestRisk,
     required this.isHydrated,
     required this.syncStatus,
@@ -44,6 +45,8 @@ class ChatState {
     required this.quickSuggestions,
     required this.lastResponseUsedFallback,
     required this.lastResponseWasRepaired,
+    required this.loadedMessagePages,
+    required this.hasMoreMessagesByConversation,
     this.lastAssistantMessage,
     this.errorMessage,
     this.retryContext,
@@ -56,6 +59,7 @@ class ChatState {
   final List<ConversationModel> conversations;
   final String activeConversationId;
   final bool isTyping;
+  final bool isLoadingHistory;
   final RiskAssessment latestRisk;
   final bool isHydrated;
   final ChatSyncStatus syncStatus;
@@ -63,6 +67,8 @@ class ChatState {
   final List<String> quickSuggestions;
   final bool lastResponseUsedFallback;
   final bool lastResponseWasRepaired;
+  final Map<String, int> loadedMessagePages;
+  final Map<String, bool> hasMoreMessagesByConversation;
   final ChatMessageModel? lastAssistantMessage;
   final String? errorMessage;
   final PendingResponseContext? retryContext;
@@ -72,6 +78,8 @@ class ChatState {
   final DateTime? lastSyncedAt;
 
   bool get hasRetryAvailable => retryContext != null;
+  bool get hasMoreMessages =>
+      hasMoreMessagesByConversation[activeConversationId] ?? false;
 
   ConversationModel get activeConversation {
     return conversations.firstWhere(
@@ -84,6 +92,7 @@ class ChatState {
     List<ConversationModel>? conversations,
     String? activeConversationId,
     bool? isTyping,
+    bool? isLoadingHistory,
     RiskAssessment? latestRisk,
     bool? isHydrated,
     ChatSyncStatus? syncStatus,
@@ -91,6 +100,8 @@ class ChatState {
     List<String>? quickSuggestions,
     bool? lastResponseUsedFallback,
     bool? lastResponseWasRepaired,
+    Map<String, int>? loadedMessagePages,
+    Map<String, bool>? hasMoreMessagesByConversation,
     ChatMessageModel? lastAssistantMessage,
     String? errorMessage,
     bool clearError = false,
@@ -106,6 +117,7 @@ class ChatState {
       conversations: conversations ?? this.conversations,
       activeConversationId: activeConversationId ?? this.activeConversationId,
       isTyping: isTyping ?? this.isTyping,
+      isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
       latestRisk: latestRisk ?? this.latestRisk,
       isHydrated: isHydrated ?? this.isHydrated,
       syncStatus: syncStatus ?? this.syncStatus,
@@ -117,6 +129,9 @@ class ChatState {
       lastResponseWasRepaired: clearResponseMetadata
           ? false
           : lastResponseWasRepaired ?? this.lastResponseWasRepaired,
+      loadedMessagePages: loadedMessagePages ?? this.loadedMessagePages,
+      hasMoreMessagesByConversation:
+          hasMoreMessagesByConversation ?? this.hasMoreMessagesByConversation,
       lastAssistantMessage: clearResponseMetadata
           ? null
           : lastAssistantMessage ?? this.lastAssistantMessage,
@@ -174,6 +189,7 @@ class ChatState {
       conversations: [seedConversation],
       activeConversationId: seedConversation.id,
       isTyping: false,
+      isLoadingHistory: false,
       latestRisk: const RiskAssessment(
         level: RiskLevel.moderate,
         score: 2,
@@ -187,6 +203,8 @@ class ChatState {
       quickSuggestions: defaultChatSuggestions,
       lastResponseUsedFallback: false,
       lastResponseWasRepaired: false,
+      loadedMessagePages: {seedConversation.id: 1},
+      hasMoreMessagesByConversation: {seedConversation.id: false},
       lastAssistantMessage: null,
     );
   }
@@ -216,6 +234,8 @@ class ChatController extends StateNotifier<ChatState> {
     unawaited(load());
   }
 
+  static const int _historyPageSize = 40;
+
   final SecureStorageService _storage;
   final ChatRepository _repository;
   final Ref _ref;
@@ -229,6 +249,14 @@ class ChatController extends StateNotifier<ChatState> {
       state = state.copyWith(
         conversations: cached.conversations,
         activeConversationId: selected.id,
+        loadedMessagePages: {
+          for (final conversation in cached.conversations)
+            conversation.id: conversation.messages.isEmpty ? 0 : 1,
+        },
+        hasMoreMessagesByConversation: {
+          for (final conversation in cached.conversations)
+            conversation.id: false,
+        },
         latestRisk: _riskFromConversation(selected),
         isHydrated: true,
         syncStatus: _repository.isRemoteEnabled
@@ -279,12 +307,23 @@ class ChatController extends StateNotifier<ChatState> {
       state = state.copyWith(
         conversations: sorted,
         activeConversationId: selected.id,
+        loadedMessagePages: {
+          for (final conversation in sorted)
+            conversation.id: conversation.messages.isEmpty ? 0 : 1,
+        },
+        hasMoreMessagesByConversation: {
+          for (final conversation in sorted) conversation.id: false,
+        },
         latestRisk: _riskFromConversation(selected),
         isHydrated: true,
         syncStatus: ChatSyncStatus.synced,
         lastSyncedAt: DateTime.now(),
         clearError: true,
         clearRetryContext: true,
+      );
+      await _hydrateConversationFromBackend(
+        selected.id,
+        showSyncState: false,
       );
       await persist();
       return;
@@ -356,6 +395,9 @@ class ChatController extends StateNotifier<ChatState> {
       clearResponseMetadata: true,
     );
     await persist();
+    if (_repository.isRemoteEnabled) {
+      await _hydrateConversationFromBackend(conversationId);
+    }
   }
 
   Future<void> newConversation() async {
@@ -381,6 +423,14 @@ class ChatController extends StateNotifier<ChatState> {
     state = state.copyWith(
       conversations: _sortConversations([conversation, ...state.conversations]),
       activeConversationId: conversation.id,
+      loadedMessagePages: {
+        ...state.loadedMessagePages,
+        conversation.id: conversation.messages.isEmpty ? 0 : 1,
+      },
+      hasMoreMessagesByConversation: {
+        ...state.hasMoreMessagesByConversation,
+        conversation.id: false,
+      },
       latestRisk: _riskFromConversation(conversation),
       syncStatus: syncStatus,
       lastSyncedAt: syncStatus == ChatSyncStatus.synced ? DateTime.now() : null,
@@ -400,6 +450,42 @@ class ChatController extends StateNotifier<ChatState> {
     if (normalized.isEmpty) {
       return;
     }
+
+    if (_repository.isRemoteEnabled) {
+      try {
+        final remoteConversation = await _repository.renameConversation(
+          conversationId: conversationId,
+          title: normalized,
+        );
+        final updated = state.conversations.map((conversation) {
+          if (conversation.id != conversationId) {
+            return conversation;
+          }
+          return conversation.copyWith(
+            title: remoteConversation.title,
+            discreetMode: remoteConversation.discreetMode,
+            lastRiskLevel: remoteConversation.lastRiskLevel,
+            updatedAt: remoteConversation.updatedAt,
+          );
+        }).toList(growable: false);
+        state = state.copyWith(
+          conversations: _sortConversations(updated),
+          syncStatus: ChatSyncStatus.synced,
+          lastSyncedAt: DateTime.now(),
+          clearError: true,
+        );
+        await persist();
+        return;
+      } catch (_) {
+        state = state.copyWith(
+          errorMessage:
+              'Nao consegui renomear a conversa no backend agora. Tente novamente quando fizer sentido.',
+          syncStatus: ChatSyncStatus.offline,
+        );
+        return;
+      }
+    }
+
     final updated = state.conversations.map((conversation) {
       if (conversation.id != conversationId) {
         return conversation;
@@ -412,21 +498,65 @@ class ChatController extends StateNotifier<ChatState> {
   }
 
   Future<void> deleteConversation(String conversationId) async {
+    if (_repository.isRemoteEnabled) {
+      try {
+        await _repository.deleteConversation(conversationId);
+      } catch (_) {
+        state = state.copyWith(
+          errorMessage:
+              'Nao consegui excluir a conversa no backend agora. Tente novamente para evitar inconsistencias.',
+          syncStatus: ChatSyncStatus.offline,
+        );
+        return;
+      }
+    }
+
     final remaining = state.conversations
         .where((conversation) => conversation.id != conversationId)
         .toList(growable: false);
+    final updatedLoadedPages = Map<String, int>.from(state.loadedMessagePages)
+      ..remove(conversationId);
+    final updatedHasMore =
+        Map<String, bool>.from(state.hasMoreMessagesByConversation)
+          ..remove(conversationId);
 
     if (remaining.isEmpty) {
-      final fallback = _createBlankConversation();
+      final discreetMode = _ref.read(authControllerProvider).discreetMode;
+      var fallback = _createBlankConversation();
+      var syncStatus = _repository.isRemoteEnabled
+          ? ChatSyncStatus.offline
+          : ChatSyncStatus.localOnly;
+      String? errorMessage;
+      if (_repository.isRemoteEnabled) {
+        try {
+          fallback = await _repository.createConversation(
+            title: _defaultConversationTitle(discreetMode),
+            discreetMode: discreetMode,
+          );
+          syncStatus = ChatSyncStatus.synced;
+        } catch (_) {
+          errorMessage =
+              'A conversa foi removida, mas nao consegui criar uma nova no backend agora.';
+        }
+      }
       state = state.copyWith(
         conversations: [fallback],
         activeConversationId: fallback.id,
+        loadedMessagePages: {fallback.id: fallback.messages.isEmpty ? 0 : 1},
+        hasMoreMessagesByConversation: {fallback.id: false},
         latestRisk: _riskFromConversation(fallback),
         latestCtas: const [],
+        syncStatus: syncStatus,
+        lastSyncedAt:
+            syncStatus == ChatSyncStatus.synced ? DateTime.now() : null,
+        errorMessage: errorMessage,
         clearError: true,
         clearRetryContext: true,
         clearResponseMetadata: true,
       );
+      if (errorMessage != null) {
+        state = state.copyWith(errorMessage: errorMessage);
+      }
       await persist();
       return;
     }
@@ -440,6 +570,8 @@ class ChatController extends StateNotifier<ChatState> {
     state = state.copyWith(
       conversations: sorted,
       activeConversationId: activeId,
+      loadedMessagePages: updatedLoadedPages,
+      hasMoreMessagesByConversation: updatedHasMore,
       latestRisk: _riskFromConversation(active),
       latestCtas: const [],
       clearError: true,
@@ -447,6 +579,60 @@ class ChatController extends StateNotifier<ChatState> {
       clearResponseMetadata: true,
     );
     await persist();
+    if (_repository.isRemoteEnabled &&
+        state.activeConversation.messages.isNotEmpty) {
+      await _hydrateConversationFromBackend(state.activeConversationId);
+    }
+  }
+
+  Future<void> loadOlderMessages() async {
+    if (!_repository.isRemoteEnabled ||
+        state.isLoadingHistory ||
+        !state.hasMoreMessages) {
+      return;
+    }
+
+    final active = state.activeConversation;
+    final nextPage = (state.loadedMessagePages[active.id] ?? 1) + 1;
+    state = state.copyWith(isLoadingHistory: true, clearError: true);
+    try {
+      final page = await _repository.listMessages(
+        conversationId: active.id,
+        page: nextPage,
+        pageSize: _historyPageSize,
+      );
+      final knownIds = active.messages.map((item) => item.id).toSet();
+      final olderItems = page.items
+          .where((item) => !knownIds.contains(item.id))
+          .toList(growable: false);
+      final updatedConversation = active.copyWith(
+        messages: [...olderItems, ...active.messages],
+        updatedAt: active.updatedAt,
+      );
+      state = state.copyWith(
+        conversations: _replaceConversation(updatedConversation),
+        isLoadingHistory: false,
+        loadedMessagePages: {
+          ...state.loadedMessagePages,
+          active.id: page.page,
+        },
+        hasMoreMessagesByConversation: {
+          ...state.hasMoreMessagesByConversation,
+          active.id: page.hasMore,
+        },
+        syncStatus: ChatSyncStatus.synced,
+        lastSyncedAt: DateTime.now(),
+        clearError: true,
+      );
+      await persist();
+    } catch (_) {
+      state = state.copyWith(
+        isLoadingHistory: false,
+        syncStatus: ChatSyncStatus.offline,
+        errorMessage:
+            'Nao consegui carregar mensagens anteriores agora. O historico local continua disponivel.',
+      );
+    }
   }
 
   Future<void> clearCurrentConversation() async {
@@ -459,6 +645,14 @@ class ChatController extends StateNotifier<ChatState> {
     );
     state = state.copyWith(
       conversations: _replaceConversation(resetConversation),
+      loadedMessagePages: {
+        ...state.loadedMessagePages,
+        active.id: 0,
+      },
+      hasMoreMessagesByConversation: {
+        ...state.hasMoreMessagesByConversation,
+        active.id: false,
+      },
       latestRisk: _riskFromConversation(resetConversation),
       latestCtas: const [],
       clearError: true,
@@ -466,6 +660,77 @@ class ChatController extends StateNotifier<ChatState> {
       clearResponseMetadata: true,
     );
     await persist();
+  }
+
+  Future<void> _hydrateConversationFromBackend(
+    String conversationId, {
+    bool showSyncState = true,
+  }) async {
+    if (!_repository.isRemoteEnabled) {
+      return;
+    }
+    final exists = state.conversations.any((item) => item.id == conversationId);
+    if (!exists) {
+      return;
+    }
+
+    if (showSyncState) {
+      state = state.copyWith(
+        isLoadingHistory: true,
+        syncStatus: ChatSyncStatus.syncing,
+        clearError: true,
+      );
+    }
+
+    try {
+      final remoteConversation =
+          await _repository.getConversation(conversationId);
+      final page = await _repository.listMessages(
+        conversationId: conversationId,
+        page: 1,
+        pageSize: _historyPageSize,
+      );
+      final hydratedConversation = remoteConversation.copyWith(
+        messages: page.items,
+      );
+      final activeId = state.activeConversationId == conversationId
+          ? hydratedConversation.id
+          : state.activeConversationId;
+      final activeConversation = activeId == hydratedConversation.id
+          ? hydratedConversation
+          : state.conversations.firstWhere(
+              (item) => item.id == activeId,
+              orElse: () => hydratedConversation,
+            );
+      state = state.copyWith(
+        conversations: _replaceConversation(
+          hydratedConversation,
+          previousId: conversationId,
+        ),
+        activeConversationId: activeId,
+        latestRisk: _riskFromConversation(activeConversation),
+        isLoadingHistory: false,
+        syncStatus: ChatSyncStatus.synced,
+        lastSyncedAt: DateTime.now(),
+        loadedMessagePages: {
+          ...state.loadedMessagePages,
+          hydratedConversation.id: page.page,
+        },
+        hasMoreMessagesByConversation: {
+          ...state.hasMoreMessagesByConversation,
+          hydratedConversation.id: page.hasMore,
+        },
+        clearError: true,
+      );
+      await persist();
+    } catch (_) {
+      state = state.copyWith(
+        isLoadingHistory: false,
+        syncStatus: ChatSyncStatus.offline,
+        errorMessage:
+            'Nao consegui sincronizar a conversa completa agora. O cache local continua disponivel.',
+      );
+    }
   }
 
   Future<void> sendMessage(String text) async {
@@ -499,6 +764,7 @@ class ChatController extends StateNotifier<ChatState> {
       conversations: _replaceConversation(optimisticConversation),
       activeConversationId: optimisticConversation.id,
       isTyping: true,
+      isLoadingHistory: false,
       syncStatus: _repository.isRemoteEnabled
           ? ChatSyncStatus.syncing
           : ChatSyncStatus.localOnly,
@@ -602,6 +868,19 @@ class ChatController extends StateNotifier<ChatState> {
         messages: [...updatedConversation.messages, reply.assistantMessage],
         updatedAt: DateTime.now(),
       );
+      final preservedPage = state.loadedMessagePages[conversationId] ?? 1;
+      final preservedHasMore =
+          state.hasMoreMessagesByConversation[conversationId] ?? false;
+      final nextLoadedPages = Map<String, int>.from(state.loadedMessagePages);
+      final nextHasMoreMessages =
+          Map<String, bool>.from(state.hasMoreMessagesByConversation);
+      if (reply.conversationId != conversationId) {
+        nextLoadedPages.remove(conversationId);
+        nextHasMoreMessages.remove(conversationId);
+      }
+      nextLoadedPages[reply.conversationId] =
+          preservedPage < 1 ? 1 : preservedPage;
+      nextHasMoreMessages[reply.conversationId] = preservedHasMore;
 
       final isActiveConversation = state.activeConversationId == conversationId;
       final latestRisk = isActiveConversation ? reply.risk : state.latestRisk;
@@ -626,6 +905,8 @@ class ChatController extends StateNotifier<ChatState> {
         lastResponseUsedFallback:
             reply.servedFromFallback || reply.backendFallbackUsed,
         lastResponseWasRepaired: reply.validationRepaired,
+        loadedMessagePages: nextLoadedPages,
+        hasMoreMessagesByConversation: nextHasMoreMessages,
         syncStatus: reply.servedFromFallback
             ? (_repository.isRemoteEnabled
                 ? ChatSyncStatus.offline
@@ -652,6 +933,7 @@ class ChatController extends StateNotifier<ChatState> {
     } on TimeoutException {
       state = state.copyWith(
         isTyping: false,
+        isLoadingHistory: false,
         syncStatus: ChatSyncStatus.offline,
         errorMessage:
             'A resposta demorou mais do que o esperado. Quando voce quiser, tente novamente.',
@@ -659,6 +941,7 @@ class ChatController extends StateNotifier<ChatState> {
     } catch (_) {
       state = state.copyWith(
         isTyping: false,
+        isLoadingHistory: false,
         syncStatus: ChatSyncStatus.offline,
         errorMessage:
             'Nao consegui responder agora. Sua mensagem continua salva e voce pode tentar de novo.',

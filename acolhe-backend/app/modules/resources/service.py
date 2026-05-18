@@ -10,7 +10,9 @@ class ResourcesService:
     def __init__(self) -> None:
         self.repository = ResourcesRepository()
 
-    def list_articles(self, session: Session, locale: str = "pt-BR") -> list[ResourceArticleResponse]:
+    def list_articles(
+        self, session: Session, locale: str = "pt-BR"
+    ) -> list[ResourceArticleResponse]:
         articles = self.repository.list_resources(session, locale=locale)
         return [
             ResourceArticleResponse(

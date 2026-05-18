@@ -3,7 +3,11 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.models import IncidentRecord, SafetyPlan, TrustedContact, User
-from app.modules.settings.schemas import ExportBundleResponse, SettingsResponse, SettingsUpdateRequest
+from app.modules.settings.schemas import (
+    ExportBundleResponse,
+    SettingsResponse,
+    SettingsUpdateRequest,
+)
 from app.repositories.auth_repository import AuthRepository
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.settings_repository import SettingsRepository
@@ -46,16 +50,20 @@ class SettingsService:
             setting = self.settings_repository.save(session, setting)
         return self._serialize(setting)
 
-    def update(self, session: Session, payload: SettingsUpdateRequest) -> SettingsResponse:
+    def update(
+        self, session: Session, payload: SettingsUpdateRequest
+    ) -> SettingsResponse:
         user = self._user(session)
         setting = self.settings_repository.get_or_create(session, user.id)
         for key, value in payload.model_dump().items():
             setattr(
                 setting,
                 key,
-                self._normalize_app_name(value)
-                if key == "discreet_app_name"
-                else value,
+                (
+                    self._normalize_app_name(value)
+                    if key == "discreet_app_name"
+                    else value
+                ),
             )
         return self._serialize(self.settings_repository.save(session, setting))
 
@@ -88,7 +96,9 @@ class SettingsService:
                 "location": item.location,
                 "chronological_summary": item.chronological_summary,
             }
-            for item in session.query(IncidentRecord).filter(IncidentRecord.user_id == user.id)
+            for item in session.query(IncidentRecord).filter(
+                IncidentRecord.user_id == user.id
+            )
         ]
         trusted_contacts = [
             {
@@ -98,9 +108,15 @@ class SettingsService:
                 "phone": item.phone,
                 "email": item.email,
             }
-            for item in session.query(TrustedContact).filter(TrustedContact.user_id == user.id)
+            for item in session.query(TrustedContact).filter(
+                TrustedContact.user_id == user.id
+            )
         ]
-        plan = session.query(SafetyPlan).filter(SafetyPlan.user_id == user.id).one_or_none()
+        plan = (
+            session.query(SafetyPlan)
+            .filter(SafetyPlan.user_id == user.id)
+            .one_or_none()
+        )
         return ExportBundleResponse(
             profile={
                 "id": user.id,
@@ -112,16 +128,18 @@ class SettingsService:
             conversations=conversations,
             incident_records=incident_records,
             trusted_contacts=trusted_contacts,
-            safety_plan={
-                "safe_locations": plan.safe_locations,
-                "warning_signs": plan.warning_signs,
-                "immediate_steps": plan.immediate_steps,
-                "priority_contacts": plan.priority_contacts,
-                "personal_notes": plan.personal_notes,
-                "emergency_checklist": plan.emergency_checklist,
-            }
-            if plan
-            else None,
+            safety_plan=(
+                {
+                    "safe_locations": plan.safe_locations,
+                    "warning_signs": plan.warning_signs,
+                    "immediate_steps": plan.immediate_steps,
+                    "priority_contacts": plan.priority_contacts,
+                    "personal_notes": plan.personal_notes,
+                    "emergency_checklist": plan.emergency_checklist,
+                }
+                if plan
+                else None
+            ),
         )
 
     def purge(self, session: Session) -> dict[str, str]:
