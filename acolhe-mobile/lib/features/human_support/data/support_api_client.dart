@@ -65,23 +65,22 @@ class SupportApiClient {
   }
 
   Future<SupportRequestModel?> getCurrentSupportRequest() async {
+    final status = await getCurrentSupportStatus();
+    return status.request;
+  }
+
+  Future<SupportRequestStatusModel> getCurrentSupportStatus() async {
     final response = await _send(
       () => _client.get(_uri('/support/request/current'), headers: _headers),
     );
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    final request = decoded['request'];
-    if (request is! Map) {
-      return null;
-    }
-    return SupportRequestModel.fromJson(Map<String, dynamic>.from(request));
+    return SupportRequestStatusModel.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
   }
 
   Future<String?> getCurrentSessionId() async {
-    final response = await _send(
-      () => _client.get(_uri('/support/request/current'), headers: _headers),
-    );
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    return decoded['active_session_id'] as String?;
+    final status = await getCurrentSupportStatus();
+    return status.activeSessionId;
   }
 
   Future<void> cancelSupportRequest(String requestId) async {
@@ -197,6 +196,39 @@ class SupportApiClient {
     final decoded = jsonDecode(response.body) as List<dynamic>;
     return decoded
         .map((item) => QueueSnapshotModel.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ))
+        .toList(growable: false);
+  }
+
+  Future<SupporterDashboardModel> getSupporterDashboard() async {
+    final response = await _send(
+      () => _client.get(_uri('/supporter/dashboard'), headers: _headers),
+    );
+    return SupporterDashboardModel.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<AdminDashboardModel> getAdminDashboard() async {
+    final response = await _send(
+      () => _client.get(_uri('/admin/support/dashboard'), headers: _headers),
+    );
+    return AdminDashboardModel.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  Future<List<SupportModerationAlertModel>> getModerationAlerts() async {
+    final response = await _send(
+      () => _client.get(
+        _uri('/admin/support/moderation-alerts'),
+        headers: _headers,
+      ),
+    );
+    final decoded = jsonDecode(response.body) as List<dynamic>;
+    return decoded
+        .map((item) => SupportModerationAlertModel.fromJson(
               Map<String, dynamic>.from(item as Map),
             ))
         .toList(growable: false);

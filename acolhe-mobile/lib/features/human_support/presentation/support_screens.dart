@@ -68,6 +68,11 @@ class RedeAcolheIntroScreen extends ConsumerWidget {
                 support.connectionLabel,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Quando houver conexao, a fila e o atendimento passam a sincronizar automaticamente.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               if (support.errorMessage != null) ...[
                 const SizedBox(height: 12),
                 StatusNoticeBanner(
@@ -317,7 +322,7 @@ class _HumanChatScreenState extends ConsumerState<HumanChatScreen> {
                 ),
                 children: [
                   if (summary != null)
-                    StatusNoticeBanner(
+                    const StatusNoticeBanner(
                       message:
                           'A Rede Acolhe oferece acolhimento inicial e orientacao segura. Em risco imediato, priorize emergencia e rede de confianca.',
                       icon: Icons.info_outline_rounded,
@@ -330,9 +335,23 @@ class _HumanChatScreenState extends ConsumerState<HumanChatScreen> {
                       tone: Theme.of(context).colorScheme.error,
                     ),
                   ],
+                  if (support.connectionLabel != 'Conectado') ...[
+                    const SizedBox(height: 12),
+                    StatusNoticeBanner(
+                      message: support.connectionLabel,
+                      icon: Icons.sync_problem_outlined,
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   for (final message in session?.messages ?? const [])
                     _HumanMessageBubble(message: message),
+                  if (support.isOtherParticipantTyping) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'A outra pessoa esta digitando...',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -471,6 +490,11 @@ class _SupporterDashboardScreenState
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 10),
+                  Text(
+                    support.connectionLabel,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 10),
                   StatusNoticeBanner(
                     message: support.statusMessage ??
                         'Antes de atender, confirme as diretrizes e mantenha a disponibilidade atualizada.',
@@ -517,6 +541,16 @@ class _SupporterDashboardScreenState
                   const SizedBox(height: 8),
                   Text(
                       'Em andamento: ${support.activeSupporterSessions.length}'),
+                  if (support.supporterDashboard != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Primeira atribuicao media: ${support.supporterDashboard!.metrics.averageFirstAssignmentMinutes.toStringAsFixed(1)} min',
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Alertas de moderacao abertos: ${support.supporterDashboard!.openModerationAlerts}',
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   if (support.errorMessage != null)
                     StatusNoticeBanner(
@@ -611,6 +645,20 @@ class _SupporterQueueScreenState extends ConsumerState<SupporterQueueScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(item.request.safeSummary.summaryText),
+                  if (item.distributionScore > 0) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      'Compatibilidade sugerida: ${(item.distributionScore * 100).toStringAsFixed(0)}%',
+                    ),
+                  ],
+                  if (item.matchingReasons.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    for (final reason in item.matchingReasons.take(3))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text('• $reason'),
+                      ),
+                  ],
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 10,
@@ -707,9 +755,21 @@ class _SupportSessionDetailScreenState
                     'Atendimento em andamento',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
+              const SizedBox(height: 8),
+              Text(
+                support.connectionLabel,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               const SizedBox(height: 12),
               for (final message in session?.messages ?? const [])
                 _HumanMessageBubble(message: message),
+              if (support.isOtherParticipantTyping) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'A pessoa atendida esta digitando...',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(
                 controller: _messageController,
@@ -790,6 +850,15 @@ class _SupportSessionDetailScreenState
                 subtitle:
                     'Estas sugestoes sao apenas para apoiar sua conduta. Nada e enviado automaticamente.',
               ),
+              if (support.latestModerationAlert != null) ...[
+                const SizedBox(height: 12),
+                StatusNoticeBanner(
+                  message:
+                      'Alerta recente de moderacao: ${support.latestModerationAlert!.rationale}',
+                  icon: Icons.flag_outlined,
+                  tone: Theme.of(context).colorScheme.error,
+                ),
+              ],
               const SizedBox(height: 12),
               if (summary != null) ...[
                 Text('Resumo seguro',

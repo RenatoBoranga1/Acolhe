@@ -1,17 +1,23 @@
 import 'package:acolhe_mobile/features/human_support/data/support_api_client.dart';
+import 'package:acolhe_mobile/features/human_support/data/support_realtime_client.dart';
 import 'package:acolhe_mobile/features/human_support/domain/support_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final supportRepositoryProvider = Provider<SupportRepository>((ref) {
-  return SupportRepository(ref.read(supportApiClientProvider));
+  return SupportRepository(
+    ref.read(supportApiClientProvider),
+    ref.read(supportRealtimeClientProvider),
+  );
 });
 
 class SupportRepository {
-  const SupportRepository(this._apiClient);
+  const SupportRepository(this._apiClient, this._realtimeClient);
 
   final SupportApiClient _apiClient;
+  final SupportRealtimeClient _realtimeClient;
 
   bool get isRemoteEnabled => _apiClient.isEnabled;
+  bool get isRealtimeEnabled => _realtimeClient.isEnabled;
 
   Future<SupportRequestModel> createSupportRequest({
     required String? conversationId,
@@ -25,6 +31,10 @@ class SupportRepository {
 
   Future<SupportRequestModel?> getCurrentSupportRequest() {
     return _apiClient.getCurrentSupportRequest();
+  }
+
+  Future<SupportRequestStatusModel> getCurrentSupportStatus() {
+    return _apiClient.getCurrentSupportStatus();
   }
 
   Future<String?> getCurrentSessionId() {
@@ -87,6 +97,18 @@ class SupportRepository {
     return _apiClient.getSupporterQueue();
   }
 
+  Future<SupporterDashboardModel> getSupporterDashboard() {
+    return _apiClient.getSupporterDashboard();
+  }
+
+  Future<AdminDashboardModel> getAdminDashboard() {
+    return _apiClient.getAdminDashboard();
+  }
+
+  Future<List<SupportModerationAlertModel>> getModerationAlerts() {
+    return _apiClient.getModerationAlerts();
+  }
+
   Future<HumanSupportSessionModel> acceptSupportRequest(String requestId) {
     return _apiClient.acceptSupportRequest(requestId);
   }
@@ -129,5 +151,28 @@ class SupportRepository {
       sessionId: sessionId,
       reason: reason,
     );
+  }
+
+  Stream<SupportRealtimeEventModel> userEvents({String? userId}) {
+    return _realtimeClient.connectUser(userId: userId);
+  }
+
+  Stream<SupportRealtimeEventModel> sessionEvents({
+    required String sessionId,
+    required String actor,
+    String? userId,
+  }) {
+    return _realtimeClient.connectSession(
+      sessionId: sessionId,
+      actor: actor,
+      userId: userId,
+    );
+  }
+
+  Stream<SupportRealtimeEventModel> dashboardEvents({
+    required String role,
+    String? userId,
+  }) {
+    return _realtimeClient.connectDashboard(role: role, userId: userId);
   }
 }

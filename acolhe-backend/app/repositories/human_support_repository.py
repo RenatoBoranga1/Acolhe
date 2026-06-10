@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from sqlalchemy import desc, func, select
@@ -9,6 +10,7 @@ from app.models import (
     HumanChatSession,
     HumanMessage,
     SupportAuditLog,
+    SupportModerationAlert,
     SupportReport,
     SupportRequest,
     SupporterProfile,
@@ -32,7 +34,7 @@ class HumanSupportRepository:
         self,
         session: Session,
         *,
-        role_types: list[str] | None = None,
+        role_types: Sequence[str] | None = None,
         available_only: bool = False,
     ) -> list[SupporterProfile]:
         stmt = select(SupporterProfile).order_by(SupporterProfile.created_at.asc())
@@ -57,7 +59,7 @@ class HumanSupportRepository:
             select(SupportRequest)
             .where(
                 SupportRequest.user_id == user_id,
-                SupportRequest.status.in_(("waiting", "assigned", "active")),
+                SupportRequest.status.in_(("waiting", "assigned", "active", "escalated")),
             )
             .order_by(SupportRequest.created_at.desc())
         )
@@ -80,9 +82,13 @@ class HumanSupportRepository:
     def list_queue(self, session: Session) -> list[SupportRequest]:
         stmt = (
             select(SupportRequest)
-            .where(SupportRequest.status.in_(("waiting", "assigned")))
+            .where(SupportRequest.status.in_(("waiting", "assigned", "escalated")))
             .order_by(desc(SupportRequest.priority_score), SupportRequest.created_at.asc())
         )
+        return list(session.scalars(stmt))
+
+    def list_requests(self, session: Session) -> list[SupportRequest]:
+        stmt = select(SupportRequest).order_by(SupportRequest.created_at.desc())
         return list(session.scalars(stmt))
 
     def list_active_sessions_for_supporter(
@@ -96,6 +102,44 @@ class HumanSupportRepository:
             )
             .order_by(HumanChatSession.created_at.desc())
         )
+        return list(session.scalars(stmt))
+
+    def list_recent_closed_sessions_for_supporter(
+        self,
+        session: Session,
+        supporter_profile_id: str,
+        *,
+        limit: int = 8,
+    ) -> list[HumanChatSession]:
+        stmt = (
+            select(HumanChatSession)
+            .where(
+                HumanChatSession.supporter_id == supporter_profile_id,
+                HumanChatSession.status == "closed",
+            )
+            .order_by(HumanChatSession.ended_at.desc(), HumanChatSession.created_at.desc())
+            .limit(limit)
+        )
+        return list(session.scalars(stmt))
+
+    def list_active_sessions(self, session: Session) -> list[HumanChatSession]:
+        stmt = (
+            select(HumanChatSession)
+            .where(HumanChatSession.status.in_(("assigned", "active")))
+            .order_by(HumanChatSession.created_at.desc())
+        )
+        return list(session.scalars(stmt))
+
+    def list_closed_sessions(
+        self, session: Session, *, limit: int | None = None
+    ) -> list[HumanChatSession]:
+        stmt = (
+            select(HumanChatSession)
+            .where(HumanChatSession.status == "closed")
+            .order_by(HumanChatSession.ended_at.desc(), HumanChatSession.created_at.desc())
+        )
+        if limit is not None:
+            stmt = stmt.limit(limit)
         return list(session.scalars(stmt))
 
     def count_active_sessions_for_supporter(
@@ -175,8 +219,39 @@ class HumanSupportRepository:
         session.refresh(report)
         return report
 
-    def list_reports(self, session: Session) -> list[SupportReport]:
+    def list_reports(
+        self,
+        session: Session,
+        *,
+        status: str | None = None,
+    ) -> list[SupportReport]:
         stmt = select(SupportReport).order_by(SupportReport.created_at.desc())
+        if status is not None:
+            stmt = stmt.where(SupportReport.status == status)
+        return list(session.scalars(stmt))
+
+    def save_moderation_alert(
+        self, session: Session, alert: SupportModerationAlert
+    ) -> SupportModerationAlert:
+        session.add(alert)
+        session.commit()
+        session.refresh(alert)
+        return alert
+
+    def list_moderation_alerts(
+        self,
+        session: Session,
+        *,
+        status: str | None = None,
+        limit: int | None = None,
+    ) -> list[SupportModerationAlert]:
+        stmt = select(SupportModerationAlert).order_by(
+            SupportModerationAlert.created_at.desc()
+        )
+        if status is not None:
+            stmt = stmt.where(SupportModerationAlert.status == status)
+        if limit is not None:
+            stmt = stmt.limit(limit)
         return list(session.scalars(stmt))
 
     def save_audit_log(
@@ -198,6 +273,20 @@ class HumanSupportRepository:
         session.commit()
         session.refresh(log)
         return log
+
+    def list_audit_logs(
+        self,
+        session: Session,
+        *,
+        action: str | None = None,
+        limit: int | None = None,
+    ) -> list[SupportAuditLog]:
+        stmt = select(SupportAuditLog).order_by(SupportAuditLog.created_at.desc())
+        if action is not None:
+            stmt = stmt.where(SupportAuditLog.action == action)
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        return list(session.scalars(stmt))
 
     def touch_request_status(
         self,

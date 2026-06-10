@@ -141,6 +141,8 @@ class SupporterProfileModel {
     required this.maxActiveSessions,
     required this.trainingCompleted,
     this.guidelinesAcceptedAt,
+    this.presenceStatus,
+    this.activeSessionCount = 0,
   });
 
   final String id;
@@ -153,6 +155,8 @@ class SupporterProfileModel {
   final int maxActiveSessions;
   final bool trainingCompleted;
   final DateTime? guidelinesAcceptedAt;
+  final String? presenceStatus;
+  final int activeSessionCount;
 
   bool get isVerifiedSpecialist =>
       roleType == SupportRoleType.specialist &&
@@ -185,6 +189,11 @@ class SupporterProfileModel {
             (json['guidelinesAcceptedAt'] as String?) ??
             '',
       ),
+      presenceStatus: (json['presence_status'] as String?) ??
+          (json['presenceStatus'] as String?),
+      activeSessionCount: (json['active_session_count'] as num?)?.toInt() ??
+          (json['activeSessionCount'] as num?)?.toInt() ??
+          0,
     );
   }
 }
@@ -201,6 +210,8 @@ class SupportRequestModel {
     required this.createdAt,
     required this.safeSummary,
     required this.queueStatusLabel,
+    this.distributionScore,
+    this.recommendedSpecialty,
     this.conversationId,
     this.assignedSupporterId,
     this.assignedSpecialistId,
@@ -227,6 +238,8 @@ class SupportRequestModel {
   final SupportSummaryModel safeSummary;
   final String? sessionId;
   final String queueStatusLabel;
+  final double? distributionScore;
+  final String? recommendedSpecialty;
 
   bool get isWaiting =>
       status == SupportRequestStatus.waiting ||
@@ -282,6 +295,10 @@ class SupportRequestModel {
       queueStatusLabel: (json['queue_status_label'] as String?) ??
           (json['queueStatusLabel'] as String?) ??
           SupportRequestStatusX.fromBackend(json['status'] as String?).label,
+      distributionScore: (json['distribution_score'] as num?)?.toDouble() ??
+          (json['distributionScore'] as num?)?.toDouble(),
+      recommendedSpecialty: (json['recommended_specialty'] as String?) ??
+          (json['recommendedSpecialty'] as String?),
     );
   }
 }
@@ -414,11 +431,15 @@ class QueueSnapshotModel {
     required this.request,
     required this.waitingMinutes,
     required this.priorityBucket,
+    required this.distributionScore,
+    required this.matchingReasons,
   });
 
   final SupportRequestModel request;
   final int waitingMinutes;
   final String priorityBucket;
+  final double distributionScore;
+  final List<String> matchingReasons;
 
   factory QueueSnapshotModel.fromJson(Map<String, dynamic> json) {
     return QueueSnapshotModel(
@@ -431,6 +452,328 @@ class QueueSnapshotModel {
       priorityBucket: (json['priority_bucket'] as String?) ??
           (json['priorityBucket'] as String?) ??
           'moderado',
+      distributionScore: (json['distribution_score'] as num?)?.toDouble() ??
+          (json['distributionScore'] as num?)?.toDouble() ??
+          0,
+      matchingReasons: List<String>.from(
+        (json['matching_reasons'] as List?) ??
+            (json['matchingReasons'] as List?) ??
+            const [],
+      ),
+    );
+  }
+}
+
+class SupportPresenceModel {
+  const SupportPresenceModel({
+    required this.userId,
+    required this.profileId,
+    required this.displayName,
+    required this.roleType,
+    required this.presenceStatus,
+    required this.isAvailable,
+    required this.activeSessions,
+    required this.updatedAt,
+  });
+
+  final String userId;
+  final String profileId;
+  final String displayName;
+  final SupportRoleType roleType;
+  final String presenceStatus;
+  final bool isAvailable;
+  final int activeSessions;
+  final DateTime updatedAt;
+
+  factory SupportPresenceModel.fromJson(Map<String, dynamic> json) {
+    return SupportPresenceModel(
+      userId: (json['user_id'] as String?) ?? (json['userId'] as String),
+      profileId:
+          (json['profile_id'] as String?) ?? (json['profileId'] as String),
+      displayName: (json['display_name'] as String?) ??
+          (json['displayName'] as String?) ??
+          'Apoiador',
+      roleType: SupportRoleTypeX.fromBackend(
+        (json['role_type'] as String?) ?? (json['roleType'] as String?),
+      ),
+      presenceStatus: (json['presence_status'] as String?) ??
+          (json['presenceStatus'] as String?) ??
+          'offline',
+      isAvailable: json['is_available'] as bool? ??
+          json['isAvailable'] as bool? ??
+          false,
+      activeSessions: (json['active_sessions'] as num?)?.toInt() ??
+          (json['activeSessions'] as num?)?.toInt() ??
+          0,
+      updatedAt: DateTime.tryParse(
+            (json['updated_at'] as String?) ??
+                (json['updatedAt'] as String?) ??
+                '',
+          ) ??
+          DateTime.now(),
+    );
+  }
+}
+
+class SupportModerationAlertModel {
+  const SupportModerationAlertModel({
+    required this.id,
+    required this.supporterProfileId,
+    required this.alertType,
+    required this.severity,
+    required this.rationale,
+    required this.status,
+    required this.createdAt,
+    this.sessionId,
+    this.messageId,
+  });
+
+  final String id;
+  final String supporterProfileId;
+  final String? sessionId;
+  final String? messageId;
+  final String alertType;
+  final String severity;
+  final String rationale;
+  final String status;
+  final DateTime createdAt;
+
+  factory SupportModerationAlertModel.fromJson(Map<String, dynamic> json) {
+    return SupportModerationAlertModel(
+      id: json['id'] as String,
+      supporterProfileId: (json['supporter_profile_id'] as String?) ??
+          (json['supporterProfileId'] as String),
+      sessionId:
+          (json['session_id'] as String?) ?? (json['sessionId'] as String?),
+      messageId:
+          (json['message_id'] as String?) ?? (json['messageId'] as String?),
+      alertType: (json['alert_type'] as String?) ??
+          (json['alertType'] as String?) ??
+          'moderation',
+      severity: (json['severity'] as String?) ?? 'moderate',
+      rationale: (json['rationale'] as String?) ?? '',
+      status: (json['status'] as String?) ?? 'open',
+      createdAt: DateTime.tryParse(
+            (json['created_at'] as String?) ??
+                (json['createdAt'] as String?) ??
+                '',
+          ) ??
+          DateTime.now(),
+    );
+  }
+}
+
+class SupportMetricsModel {
+  const SupportMetricsModel({
+    required this.averageFirstAssignmentMinutes,
+    required this.averageSessionMinutes,
+    required this.sessionsPerDay,
+    required this.sessionsBySupporter,
+    required this.sessionsByRisk,
+    required this.transferRate,
+    required this.abandonmentRate,
+    required this.totalClosedSessions,
+  });
+
+  final double averageFirstAssignmentMinutes;
+  final double averageSessionMinutes;
+  final List<Map<String, dynamic>> sessionsPerDay;
+  final List<Map<String, dynamic>> sessionsBySupporter;
+  final Map<String, int> sessionsByRisk;
+  final double transferRate;
+  final double abandonmentRate;
+  final int totalClosedSessions;
+
+  factory SupportMetricsModel.fromJson(Map<String, dynamic> json) {
+    final sessionsByRiskRaw = Map<String, dynamic>.from(
+      (json['sessions_by_risk'] as Map?) ??
+          (json['sessionsByRisk'] as Map?) ??
+          const {},
+    );
+    return SupportMetricsModel(
+      averageFirstAssignmentMinutes:
+          (json['average_first_assignment_minutes'] as num?)?.toDouble() ??
+              (json['averageFirstAssignmentMinutes'] as num?)?.toDouble() ??
+              0,
+      averageSessionMinutes:
+          (json['average_session_minutes'] as num?)?.toDouble() ??
+              (json['averageSessionMinutes'] as num?)?.toDouble() ??
+              0,
+      sessionsPerDay: (json['sessions_per_day'] as List? ??
+              json['sessionsPerDay'] as List? ??
+              const [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList(growable: false),
+      sessionsBySupporter: (json['sessions_by_supporter'] as List? ??
+              json['sessionsBySupporter'] as List? ??
+              const [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList(growable: false),
+      sessionsByRisk: sessionsByRiskRaw.map(
+        (key, value) => MapEntry(key, (value as num?)?.toInt() ?? 0),
+      ),
+      transferRate: (json['transfer_rate'] as num?)?.toDouble() ??
+          (json['transferRate'] as num?)?.toDouble() ??
+          0,
+      abandonmentRate: (json['abandonment_rate'] as num?)?.toDouble() ??
+          (json['abandonmentRate'] as num?)?.toDouble() ??
+          0,
+      totalClosedSessions: (json['total_closed_sessions'] as num?)?.toInt() ??
+          (json['totalClosedSessions'] as num?)?.toInt() ??
+          0,
+    );
+  }
+}
+
+class SupporterDashboardModel {
+  const SupporterDashboardModel({
+    required this.profile,
+    required this.queue,
+    required this.activeSessions,
+    required this.recentSessions,
+    required this.presence,
+    required this.metrics,
+    required this.openModerationAlerts,
+  });
+
+  final SupporterProfileModel profile;
+  final List<QueueSnapshotModel> queue;
+  final List<HumanSupportSessionModel> activeSessions;
+  final List<HumanSupportSessionModel> recentSessions;
+  final SupportPresenceModel presence;
+  final SupportMetricsModel metrics;
+  final int openModerationAlerts;
+
+  factory SupporterDashboardModel.fromJson(Map<String, dynamic> json) {
+    return SupporterDashboardModel(
+      profile: SupporterProfileModel.fromJson(
+        Map<String, dynamic>.from(json['profile'] as Map),
+      ),
+      queue: (json['queue'] as List? ?? const [])
+          .map((item) => QueueSnapshotModel.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(growable: false),
+      activeSessions: (json['active_sessions'] as List? ??
+              json['activeSessions'] as List? ??
+              const [])
+          .map((item) => HumanSupportSessionModel.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(growable: false),
+      recentSessions: (json['recent_sessions'] as List? ??
+              json['recentSessions'] as List? ??
+              const [])
+          .map((item) => HumanSupportSessionModel.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(growable: false),
+      presence: SupportPresenceModel.fromJson(
+        Map<String, dynamic>.from(json['presence'] as Map? ?? const {}),
+      ),
+      metrics: SupportMetricsModel.fromJson(
+        Map<String, dynamic>.from(json['metrics'] as Map? ?? const {}),
+      ),
+      openModerationAlerts: (json['open_moderation_alerts'] as num?)?.toInt() ??
+          (json['openModerationAlerts'] as num?)?.toInt() ??
+          0,
+    );
+  }
+}
+
+class AdminDashboardModel {
+  const AdminDashboardModel({
+    required this.queue,
+    required this.activeSessions,
+    required this.openReports,
+    required this.moderationAlerts,
+    required this.supporterPresence,
+    required this.metrics,
+  });
+
+  final List<QueueSnapshotModel> queue;
+  final List<HumanSupportSessionModel> activeSessions;
+  final List<Map<String, dynamic>> openReports;
+  final List<SupportModerationAlertModel> moderationAlerts;
+  final List<SupportPresenceModel> supporterPresence;
+  final SupportMetricsModel metrics;
+
+  factory AdminDashboardModel.fromJson(Map<String, dynamic> json) {
+    return AdminDashboardModel(
+      queue: (json['queue'] as List? ?? const [])
+          .map((item) => QueueSnapshotModel.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(growable: false),
+      activeSessions: (json['active_sessions'] as List? ??
+              json['activeSessions'] as List? ??
+              const [])
+          .map((item) => HumanSupportSessionModel.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(growable: false),
+      openReports: (json['open_reports'] as List? ??
+              json['openReports'] as List? ??
+              const [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList(growable: false),
+      moderationAlerts: (json['moderation_alerts'] as List? ??
+              json['moderationAlerts'] as List? ??
+              const [])
+          .map((item) => SupportModerationAlertModel.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(growable: false),
+      supporterPresence: (json['supporter_presence'] as List? ??
+              json['supporterPresence'] as List? ??
+              const [])
+          .map((item) => SupportPresenceModel.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ))
+          .toList(growable: false),
+      metrics: SupportMetricsModel.fromJson(
+        Map<String, dynamic>.from(json['metrics'] as Map? ?? const {}),
+      ),
+    );
+  }
+}
+
+class SupportRequestStatusModel {
+  const SupportRequestStatusModel({
+    required this.request,
+    required this.activeSessionId,
+  });
+
+  final SupportRequestModel? request;
+  final String? activeSessionId;
+
+  factory SupportRequestStatusModel.fromJson(Map<String, dynamic> json) {
+    final request = json['request'];
+    return SupportRequestStatusModel(
+      request: request is Map
+          ? SupportRequestModel.fromJson(Map<String, dynamic>.from(request))
+          : null,
+      activeSessionId: (json['active_session_id'] as String?) ??
+          (json['activeSessionId'] as String?),
+    );
+  }
+}
+
+class SupportRealtimeEventModel {
+  const SupportRealtimeEventModel({
+    required this.event,
+    required this.payload,
+  });
+
+  final String event;
+  final Map<String, dynamic> payload;
+
+  String get normalizedEvent => event.trim().toUpperCase();
+
+  factory SupportRealtimeEventModel.fromJson(Map<String, dynamic> json) {
+    return SupportRealtimeEventModel(
+      event: (json['event'] as String?) ?? '',
+      payload: Map<String, dynamic>.from(json['payload'] as Map? ?? const {}),
     );
   }
 }

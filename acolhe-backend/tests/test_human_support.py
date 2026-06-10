@@ -104,3 +104,94 @@ def test_human_support_guidelines_and_status_flow(client) -> None:
     data = status.json()
     assert data["is_available"] is True
     assert data["max_active_sessions"] == 3
+
+
+def test_human_support_dashboards_and_realtime(client) -> None:
+    initial_chat = client.post(
+        "/api/v1/chat/message",
+        json={
+            "message": "Quero falar com uma pessoa da rede porque estou insegura para encontrar essa pessoa de novo."
+        },
+    )
+    conversation_id = initial_chat.json()["conversation_id"]
+
+    request_response = client.post(
+        "/api/v1/support/request",
+        json={
+            "conversation_id": conversation_id,
+            "consent_to_human_handoff": True,
+            "requester_alias": "Pessoa atendida",
+        },
+    )
+    request_id = request_response.json()["id"]
+
+    supporter_dashboard = client.get("/api/v1/supporter/dashboard")
+    assert supporter_dashboard.status_code == 200
+    dashboard_payload = supporter_dashboard.json()
+    assert any(item["request"]["id"] == request_id for item in dashboard_payload["queue"])
+    assert "metrics" in dashboard_payload
+
+    with client.websocket_connect("/api/v1/ws/support/user") as user_socket:
+        initial_event = user_socket.receive_json()
+        assert initial_event["event"] == "REQUEST_UPDATED"
+        assert initial_event["payload"]["request"]["id"] == request_id
+
+        accepted = client.post(f"/api/v1/supporter/request/{request_id}/accept")
+        assert accepted.status_code == 200
+        session_id = accepted.json()["id"]
+
+        assigned_event = user_socket.receive_json()
+        assert assigned_event["event"] == "SESSION_ASSIGNED"
+        assert assigned_event["payload"]["id"] == session_id
+
+    with client.websocket_connect(
+        f"/api/v1/ws/support/session/{session_id}?actor=user"
+    ) as session_socket:
+        snapshot_event = session_socket.receive_json()
+        assert snapshot_event["event"] == "SESSION_SNAPSHOT"
+        assert snapshot_event["payload"]["id"] == session_id
+
+        session_socket.send_json({"event": "typing", "is_typing": True})
+        typing_event = session_socket.receive_json()
+        assert typing_event["event"] == "USER_TYPING"
+        assert typing_event["payload"]["is_typing"] is True
+
+
+def test_supporter_message_moderation_alert_reaches_admin_views(client) -> None:
+    initial_chat = client.post(
+        "/api/v1/chat/message",
+        json={
+            "message": "Preciso registrar o que aconteceu e depois conversar com uma pessoa real."
+        },
+    )
+    conversation_id = initial_chat.json()["conversation_id"]
+
+    request_response = client.post(
+        "/api/v1/support/request",
+        json={
+            "conversation_id": conversation_id,
+            "consent_to_human_handoff": True,
+            "requester_alias": "Pessoa atendida",
+        },
+    )
+    request_id = request_response.json()["id"]
+
+    accepted = client.post(f"/api/v1/supporter/request/{request_id}/accept")
+    session_id = accepted.json()["id"]
+
+    flagged_message = client.post(
+        f"/api/v1/supporter/session/{session_id}/messages",
+        json={"content": "Voce precisa denunciar agora."},
+    )
+    assert flagged_message.status_code == 200
+    assert flagged_message.json()["is_flagged"] is True
+
+    moderation_alerts = client.get("/api/v1/admin/support/moderation-alerts")
+    assert moderation_alerts.status_code == 200
+    alerts_payload = moderation_alerts.json()
+    assert any(item["message_id"] == flagged_message.json()["id"] for item in alerts_payload)
+
+    admin_dashboard = client.get("/api/v1/admin/support/dashboard")
+    assert admin_dashboard.status_code == 200
+    dashboard_payload = admin_dashboard.json()
+    assert dashboard_payload["moderation_alerts"]

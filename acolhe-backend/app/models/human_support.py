@@ -114,3 +114,21 @@ class SupportReport(UUIDTimestampMixin, Base):
     reason: Mapped[str] = mapped_column(String(80))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="open")
+
+
+class SupportModerationAlert(UUIDTimestampMixin, Base):
+    __tablename__ = "support_moderation_alerts"
+
+    supporter_profile_id: Mapped[str] = mapped_column(
+        ForeignKey("supporter_profiles.id"), index=True
+    )
+    session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("human_chat_sessions.id"), nullable=True, index=True
+    )
+    message_id: Mapped[str | None] = mapped_column(
+        ForeignKey("human_messages.id"), nullable=True, index=True
+    )
+    alert_type: Mapped[str] = mapped_column(String(80))
+    severity: Mapped[str] = mapped_column(String(20), default="moderate")
+    rationale: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(30), default="open")

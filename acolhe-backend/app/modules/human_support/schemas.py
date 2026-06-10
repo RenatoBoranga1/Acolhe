@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -20,6 +20,17 @@ class SupportSummaryPayload(BaseModel):
     priority_score: float
 
 
+class SupportPresencePayload(BaseModel):
+    user_id: str
+    profile_id: str
+    display_name: str
+    role_type: str
+    presence_status: Literal["online", "offline", "away", "busy"]
+    is_available: bool
+    active_sessions: int
+    updated_at: datetime
+
+
 class SupporterProfilePayload(BaseModel):
     id: str
     user_id: str
@@ -31,12 +42,16 @@ class SupporterProfilePayload(BaseModel):
     max_active_sessions: int
     training_completed: bool
     guidelines_accepted_at: datetime | None = None
+    presence_status: Literal["online", "offline", "away", "busy"] | None = None
+    active_session_count: int = 0
 
 
 class SupportRequestCreate(BaseModel):
     conversation_id: str | None = None
     consent_to_human_handoff: bool = True
-    requester_alias: str = Field(default="Pessoa atendida", min_length=2, max_length=120)
+    requester_alias: str = Field(
+        default="Pessoa atendida", min_length=2, max_length=120
+    )
 
 
 class SupportRequestPayload(BaseModel):
@@ -57,6 +72,8 @@ class SupportRequestPayload(BaseModel):
     safe_summary: SupportSummaryPayload
     session_id: str | None = None
     queue_status_label: str
+    distribution_score: float | None = None
+    recommended_specialty: str | None = None
 
 
 class SupportRequestStatusPayload(BaseModel):
@@ -78,6 +95,8 @@ class QueueItemPayload(BaseModel):
     request: SupportRequestPayload
     waiting_minutes: int
     priority_bucket: str
+    distribution_score: float = 0
+    matching_reasons: list[str] = Field(default_factory=list)
 
 
 class SessionCloseRequest(BaseModel):
@@ -145,6 +164,55 @@ class SupportReportPayload(BaseModel):
     description: str | None = None
     status: str
     created_at: datetime
+
+
+class SupportModerationAlertPayload(BaseModel):
+    id: str
+    supporter_profile_id: str
+    session_id: str | None = None
+    message_id: str | None = None
+    alert_type: str
+    severity: str
+    rationale: str
+    status: str
+    created_at: datetime
+
+
+class SupportMetricsPayload(BaseModel):
+    average_first_assignment_minutes: float
+    average_session_minutes: float
+    sessions_per_day: list[dict[str, Any]] = Field(default_factory=list)
+    sessions_by_supporter: list[dict[str, Any]] = Field(default_factory=list)
+    sessions_by_risk: dict[str, int] = Field(default_factory=dict)
+    transfer_rate: float
+    abandonment_rate: float
+    total_closed_sessions: int
+
+
+class SupporterDashboardPayload(BaseModel):
+    profile: SupporterProfilePayload
+    queue: list[QueueItemPayload] = Field(default_factory=list)
+    active_sessions: list[HumanChatSessionPayload] = Field(default_factory=list)
+    recent_sessions: list[HumanChatSessionPayload] = Field(default_factory=list)
+    presence: SupportPresencePayload
+    metrics: SupportMetricsPayload
+    open_moderation_alerts: int = 0
+
+
+class AdminDashboardPayload(BaseModel):
+    queue: list[QueueItemPayload] = Field(default_factory=list)
+    active_sessions: list[HumanChatSessionPayload] = Field(default_factory=list)
+    open_reports: list[SupportReportPayload] = Field(default_factory=list)
+    moderation_alerts: list[SupportModerationAlertPayload] = Field(
+        default_factory=list
+    )
+    supporter_presence: list[SupportPresencePayload] = Field(default_factory=list)
+    metrics: SupportMetricsPayload
+
+
+class SupportRealtimeEnvelope(BaseModel):
+    event: str
+    payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class SupporterVerifyRequest(BaseModel):
