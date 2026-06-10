@@ -1,4 +1,5 @@
 import 'package:acolhe_mobile/core/config/app_identity.dart';
+import 'package:acolhe_mobile/core/config/backend_config.dart';
 import 'package:acolhe_mobile/core/router/app_router.dart';
 import 'package:acolhe_mobile/core/theme/app_theme.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
@@ -57,6 +58,7 @@ class _AcolheAppState extends ConsumerState<AcolheApp>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(backendConfigProvider);
     final router = ref.watch(appRouterProvider);
     final auth = ref.watch(authControllerProvider);
 

@@ -1,6 +1,7 @@
 import 'package:acolhe_mobile/features/auth/presentation/auth_screens.dart';
 import 'package:acolhe_mobile/features/chat/presentation/chat_screen.dart';
 import 'package:acolhe_mobile/features/home/presentation/home_screen.dart';
+import 'package:acolhe_mobile/features/human_support/presentation/support_screens.dart';
 import 'package:acolhe_mobile/features/journal/presentation/journal_screens.dart';
 import 'package:acolhe_mobile/features/resources/presentation/resources_screen.dart';
 import 'package:acolhe_mobile/features/safety_plan/presentation/safety_plan_screen.dart';
@@ -23,6 +24,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
+      GoRoute(
+          path: '/rede-acolhe',
+          builder: (context, state) => const RedeAcolheIntroScreen()),
+      GoRoute(
+          path: '/support-queue',
+          builder: (context, state) => const SupportQueueScreen()),
+      GoRoute(
+          path: '/human-chat/:sessionId',
+          builder: (context, state) => HumanChatScreen(
+                sessionId: state.pathParameters['sessionId']!,
+              )),
+      GoRoute(
+          path: '/supporter-dashboard',
+          builder: (context, state) => const SupporterDashboardScreen()),
+      GoRoute(
+          path: '/supporter-queue',
+          builder: (context, state) => const SupporterQueueScreen()),
+      GoRoute(
+          path: '/support-session/:sessionId',
+          builder: (context, state) => SupportSessionDetailScreen(
+                sessionId: state.pathParameters['sessionId']!,
+              )),
+      GoRoute(
+          path: '/supporter-guidelines',
+          builder: (context, state) => const SupporterGuidelinesScreen()),
+      GoRoute(
+          path: '/report-supporter/:sessionId',
+          builder: (context, state) => ReportSupporterScreen(
+                sessionId: state.pathParameters['sessionId']!,
+              )),
       GoRoute(
           path: '/urgent-help',
           builder: (context, state) => const UrgentHelpScreen()),

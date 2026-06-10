@@ -16,12 +16,14 @@ class ChatHeader extends StatelessWidget {
     required this.onOpenMenu,
     required this.onNewConversation,
     required this.onQuickExit,
+    required this.onRequestHumanSupport,
     super.key,
     this.situationType,
     this.responseMode,
     this.lastSyncedAt,
     this.showDebug = false,
     this.compact = false,
+    this.humanSupportLabel = 'Quero falar com uma pessoa',
   });
 
   final String appName;
@@ -38,6 +40,8 @@ class ChatHeader extends StatelessWidget {
   final VoidCallback onOpenMenu;
   final VoidCallback onNewConversation;
   final VoidCallback onQuickExit;
+  final VoidCallback onRequestHumanSupport;
+  final String humanSupportLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -126,9 +130,7 @@ class ChatHeader extends StatelessWidget {
                     tone: theme.colorScheme.secondary,
                   ),
                 _HeaderInfoChip(
-                  icon: syncStatus == ChatSyncStatus.synced
-                      ? Icons.cloud_done_outlined
-                      : Icons.cloud_off_outlined,
+                  icon: _syncIcon(syncStatus),
                   label: _syncLabel(syncStatus, lastSyncedAt),
                   tone: syncStatus == ChatSyncStatus.synced
                       ? AcolheTheme.forest
@@ -142,6 +144,12 @@ class ChatHeader extends StatelessWidget {
                   ),
               ],
             ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: onRequestHumanSupport,
+              icon: const Icon(Icons.support_agent_outlined),
+              label: Text(humanSupportLabel),
+            ),
           ] else ...[
             const SizedBox(height: 10),
             Wrap(
@@ -154,17 +162,21 @@ class ChatHeader extends StatelessWidget {
                   tone: _riskTone(risk.level),
                 ),
                 _HeaderInfoChip(
-                  icon: syncStatus == ChatSyncStatus.synced
-                      ? Icons.cloud_done_outlined
-                      : Icons.cloud_off_outlined,
+                  icon: _syncIcon(syncStatus),
                   label: syncStatus == ChatSyncStatus.synced
-                      ? 'Sincronizado'
+                      ? 'Conectado'
                       : syncStatus.label,
                   tone: syncStatus == ChatSyncStatus.synced
                       ? AcolheTheme.forest
                       : AcolheTheme.clay,
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: onRequestHumanSupport,
+              icon: const Icon(Icons.support_agent_outlined),
+              label: Text(humanSupportLabel),
             ),
           ],
         ],
@@ -177,6 +189,14 @@ class ChatHeader extends StatelessWidget {
         RiskLevel.moderate => AcolheTheme.clay,
         RiskLevel.high => AcolheTheme.rose,
         RiskLevel.critical => const Color(0xFFD98585),
+      };
+
+  static IconData _syncIcon(ChatSyncStatus status) => switch (status) {
+        ChatSyncStatus.synced => Icons.cloud_done_outlined,
+        ChatSyncStatus.syncing => Icons.sync_rounded,
+        ChatSyncStatus.localOnly ||
+        ChatSyncStatus.offline =>
+          Icons.cloud_off_outlined,
       };
 
   static String _syncLabel(ChatSyncStatus status, DateTime? lastSyncedAt) {

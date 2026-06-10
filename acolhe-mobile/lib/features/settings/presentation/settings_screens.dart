@@ -1,5 +1,6 @@
 import 'package:acolhe_mobile/core/config/app_identity.dart';
 import 'package:acolhe_mobile/core/config/backend_config.dart';
+import 'package:acolhe_mobile/core/theme/app_theme.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/features/chat/application/chat_controller.dart';
 import 'package:acolhe_mobile/features/journal/application/journal_controller.dart';
@@ -19,10 +20,11 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
     final backend = ref.watch(backendConfigProvider);
+    final (connectionTone, connectionIcon) = _connectionPresentation(backend);
     return AppShell(
       title: 'Configuracoes e privacidade',
       subtitle:
-          'Discricao, bloqueio local, conexao do celular e limpeza rapida.',
+          'Discricao, bloqueio local, conexao inteligente e limpeza rapida.',
       maxContentWidth: 1160,
       child: AdaptiveTwoPane(
         primary: GlassCard(
@@ -107,29 +109,41 @@ class SettingsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SectionTitle(
-                    title: 'Conexao no celular',
+                    title: 'Conexao inteligente',
                     subtitle:
-                        'Use esta area para apontar o app para o backend real quando estiver em um telefone ou tablet na mesma rede do seu computador.',
+                        'O Acolhe tenta descobrir e validar automaticamente o backend mais adequado para este aparelho.',
                   ),
                   const SizedBox(height: 10),
                   StatusNoticeBanner(
-                    message: backend.usesRemoteApi
-                        ? 'Endereco atual: ${backend.effectiveBaseUrl}'
-                        : 'Sem backend remoto configurado. O app continua em modo local seguro.',
-                    icon: backend.usesRemoteApi
-                        ? Icons.wifi_tethering_rounded
-                        : Icons.cloud_off_outlined,
-                    tone: backend.usesRemoteApi
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.secondary,
+                    message: backend.statusMessage,
+                    icon: connectionIcon,
+                    tone: connectionTone,
+                    actionLabel: backend.isDiscovering ? null : 'Reconectar',
+                    onAction: backend.isDiscovering
+                        ? null
+                        : () => ref
+                            .read(backendConfigProvider.notifier)
+                            .retryDiscovery(),
                   ),
+                  if (backend.preferredBaseUrl.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      'Endereco preferido: ${backend.preferredBaseUrl}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Origem: ${backend.sourceLabel}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 18),
             AppButton.secondary(
-              label: 'Configurar backend do celular',
-              icon: Icons.settings_ethernet_rounded,
+              label: 'Ver conexao inteligente',
+              icon: Icons.wifi_find_rounded,
               onPressed: () => context.push('/backend-connection'),
             ),
             const SizedBox(height: 12),
@@ -194,7 +208,7 @@ class _BackendConnectionScreenState
       _syncedInitialValue = true;
       _urlController.text = backend.usesCustomUrl
           ? backend.customBaseUrl
-          : backend.effectiveBaseUrl;
+          : backend.preferredBaseUrl;
     }
 
     final rawValue = _urlController.text.trim();
@@ -202,8 +216,9 @@ class _BackendConnectionScreenState
     final theme = Theme.of(context);
 
     return AppShell(
-      title: 'Conexao do backend',
-      subtitle: 'Deixe o celular apontar para a API real sem recompilar o app.',
+      title: 'Conexao inteligente',
+      subtitle:
+          'O app tenta descobrir sozinho o melhor backend. A URL manual fica como opcao avancada.',
       maxContentWidth: 760,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,32 +227,34 @@ class _BackendConnectionScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                SectionTitle(
+                  title: backend.statusHeadline,
+                  subtitle: backend.statusMessage,
+                ),
+                const SizedBox(height: 12),
+                StatusNoticeBanner(
+                  message: backend.preferredBaseUrl.isEmpty
+                      ? 'Nenhum endereco foi validado ainda. O modo offline seguro continua disponivel.'
+                      : 'Endereco em uso: ${backend.preferredBaseUrl}\nOrigem: ${backend.sourceLabel}',
+                  icon: _connectionPresentation(backend).$2,
+                  tone: _connectionPresentation(backend).$1,
+                ),
+                const SizedBox(height: 18),
                 const SectionTitle(
-                  title: 'URL usada pelo celular',
+                  title: 'URL manual opcional',
                   subtitle:
-                      'Se o backend estiver no seu computador, use o IP da maquina na mesma rede Wi-Fi. Exemplo: http://192.168.0.15:8000',
+                      'Use esta area apenas se quiser fixar um endereco especifico. Em celular fisico, prefira o IP do computador na mesma rede.',
                 ),
                 const SizedBox(height: 12),
                 AppTextField(
                   controller: _urlController,
-                  label: 'URL do backend',
+                  label: 'URL personalizada',
                   hint: 'http://192.168.0.15:8000',
                   keyboardType: TextInputType.url,
                 ),
                 const SizedBox(height: 12),
-                StatusNoticeBanner(
-                  message: backend.usesRemoteApi
-                      ? 'Endereco ativo: ${backend.effectiveBaseUrl}'
-                      : 'Nenhum backend remoto ativo. O chat usa o fallback local seguro.',
-                  icon: backend.usesRemoteApi
-                      ? Icons.cloud_done_outlined
-                      : Icons.cloud_off_outlined,
-                  tone: backend.usesRemoteApi
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.secondary,
-                ),
                 if (loopbackWarning) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
                   StatusNoticeBanner(
                     message:
                         'Em celular fisico, nao use localhost, 127.0.0.1 ou 0.0.0.0. Use o IP do seu computador na rede.',
@@ -247,7 +264,7 @@ class _BackendConnectionScreenState
                 ],
                 const SizedBox(height: 12),
                 const Text(
-                  'Dica: o backend precisa subir em 0.0.0.0 para ficar visivel na rede local.',
+                  'Dica: se o backend estiver no seu computador, ele precisa subir em 0.0.0.0 para ficar visivel na rede local.',
                 ),
               ],
             ),
@@ -256,31 +273,42 @@ class _BackendConnectionScreenState
           AdaptiveTwoPane(
             breakpoint: 680,
             primary: AppButton.primary(
-              label: _saving ? 'Salvando...' : 'Salvar e reconectar chat',
-              onPressed: _saving
+              label: backend.isDiscovering
+                  ? 'Reconectando...'
+                  : 'Tentar descoberta agora',
+              icon: Icons.sync_rounded,
+              onPressed: backend.isDiscovering
                   ? null
-                  : () async {
-                      setState(() => _saving = true);
-                      await ref
-                          .read(backendConfigProvider.notifier)
-                          .saveOverride(_urlController.text);
-                      ref.invalidate(chatControllerProvider);
-                      if (!mounted) {
-                        return;
-                      }
-                      setState(() => _saving = false);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Configuracao salva. O chat vai usar a nova URL.'),
-                        ),
-                      );
-                    },
+                  : () =>
+                      ref.read(backendConfigProvider.notifier).retryDiscovery(),
             ),
             secondary: Column(
               children: [
                 AppButton.secondary(
-                  label: 'Limpar URL personalizada',
+                  label: _saving ? 'Salvando...' : 'Salvar URL manual',
+                  icon: Icons.link_rounded,
+                  onPressed: _saving
+                      ? null
+                      : () async {
+                          setState(() => _saving = true);
+                          await ref
+                              .read(backendConfigProvider.notifier)
+                              .saveOverride(_urlController.text);
+                          if (!mounted) {
+                            return;
+                          }
+                          setState(() => _saving = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'URL manual salva. O app ja esta validando a nova conexao.'),
+                            ),
+                          );
+                        },
+                ),
+                const SizedBox(height: 12),
+                AppButton.secondary(
+                  label: 'Remover URL manual',
                   onPressed: _saving
                       ? null
                       : () async {
@@ -289,7 +317,6 @@ class _BackendConnectionScreenState
                           await ref
                               .read(backendConfigProvider.notifier)
                               .clearOverride();
-                          ref.invalidate(chatControllerProvider);
                           if (!mounted) {
                             return;
                           }
@@ -297,7 +324,29 @@ class _BackendConnectionScreenState
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
-                                  'URL personalizada removida. O app voltou ao modo padrao.'),
+                                  'URL manual removida. O app voltou a procurar a melhor conexao automaticamente.'),
+                            ),
+                          );
+                        },
+                ),
+                const SizedBox(height: 12),
+                AppButton.secondary(
+                  label: 'Limpar ultima descoberta',
+                  onPressed: _saving
+                      ? null
+                      : () async {
+                          setState(() => _saving = true);
+                          await ref
+                              .read(backendConfigProvider.notifier)
+                              .clearDiscoveryCache();
+                          if (!mounted) {
+                            return;
+                          }
+                          setState(() => _saving = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Cache de descoberta limpo. O app vai procurar um backend novamente.'),
                             ),
                           );
                         },
@@ -314,15 +363,32 @@ class _BackendConnectionScreenState
       ),
     );
   }
+}
 
-  bool _looksLikeLoopback(String value) {
-    if (value.isEmpty) {
-      return false;
-    }
-    final normalized = value.startsWith('http') ? value : 'http://$value';
-    final host = Uri.tryParse(normalized)?.host.toLowerCase() ?? '';
-    return host == 'localhost' || host == '127.0.0.1' || host == '0.0.0.0';
+(Color, IconData) _connectionPresentation(BackendConfigState backend) {
+  return switch (backend.connectionState) {
+    BackendConnectionState.connected => (
+        AcolheTheme.forest,
+        Icons.cloud_done_outlined
+      ),
+    BackendConnectionState.discovering => (
+        AcolheTheme.mutedTeal,
+        Icons.sync_rounded
+      ),
+    BackendConnectionState.offline => (
+        AcolheTheme.clay,
+        Icons.cloud_off_outlined
+      ),
+  };
+}
+
+bool _looksLikeLoopback(String value) {
+  if (value.isEmpty) {
+    return false;
   }
+  final normalized = value.startsWith('http') ? value : 'http://$value';
+  final host = Uri.tryParse(normalized)?.host.toLowerCase() ?? '';
+  return host == 'localhost' || host == '127.0.0.1' || host == '0.0.0.0';
 }
 
 class PrivacyScreen extends ConsumerWidget {

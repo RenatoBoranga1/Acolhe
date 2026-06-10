@@ -1,3 +1,4 @@
+import 'package:acolhe_mobile/core/config/backend_config.dart';
 import 'package:acolhe_mobile/core/theme/app_theme.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
 import 'package:acolhe_mobile/features/chat/application/chat_controller.dart';
@@ -5,6 +6,7 @@ import 'package:acolhe_mobile/features/chat/presentation/widgets/chat_header.dar
 import 'package:acolhe_mobile/features/chat/presentation/widgets/composer.dart';
 import 'package:acolhe_mobile/features/chat/presentation/widgets/conversation_drawer.dart';
 import 'package:acolhe_mobile/features/chat/presentation/widgets/message_list.dart';
+import 'package:acolhe_mobile/features/human_support/application/support_controller.dart';
 import 'package:acolhe_mobile/shared/models/app_models.dart';
 import 'package:acolhe_mobile/shared/widgets/design_system.dart';
 import 'package:acolhe_mobile/shared/widgets/responsive_layout.dart';
@@ -210,6 +212,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final chat = ref.watch(chatControllerProvider);
+    final backend = ref.watch(backendConfigProvider);
+    final support = ref.watch(supportControllerProvider);
     final theme = Theme.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
@@ -220,6 +224,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final chatMaxWidth = AppResponsive.chatMaxWidth(width);
     final conversation = chat.activeConversation;
     final hasMessages = conversation.messages.isNotEmpty;
+    final humanSupportLabel = support.hasActiveHumanSession
+        ? 'Abrir Rede Acolhe'
+        : support.isWaitingInQueue
+            ? 'Acompanhar fila humana'
+            : 'Quero falar com uma pessoa';
+    final headerSyncStatus = backend.isDiscovering && !chat.isTyping
+        ? ChatSyncStatus.syncing
+        : backend.usesRemoteApi
+            ? chat.syncStatus
+            : backend.hasCompletedDiscovery
+                ? ChatSyncStatus.offline
+                : chat.syncStatus;
     final scrollSignature =
         '${conversation.id}:${conversation.messages.length}:${chat.isTyping}:${chat.errorMessage ?? ''}:${chat.latestRisk.level.name}';
     final canSend = !chat.isTyping && _messageController.text.trim().isNotEmpty;
@@ -337,16 +353,30 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ? 'Espaco protegido com historico local e apoio inicial.'
                           : 'Assistente de acolhimento inicial, orientacao segura e historico local protegido.',
                       risk: chat.latestRisk,
-                      syncStatus: chat.syncStatus,
+                      syncStatus: headerSyncStatus,
                       situationType: chat.situationType,
                       responseMode: chat.responseMode,
                       lastSyncedAt: chat.lastSyncedAt,
                       showDebug: _showChatDebug,
                       compact: compactMobileHeader,
                       isWideLayout: isWideLayout,
+                      humanSupportLabel: humanSupportLabel,
                       onOpenMenu: () => _scaffoldKey.currentState?.openDrawer(),
                       onNewConversation: _newConversation,
                       onQuickExit: _openQuickExit,
+                      onRequestHumanSupport: () {
+                        if (support.hasActiveHumanSession &&
+                            support.activeSession != null) {
+                          context
+                              .go('/human-chat/${support.activeSession!.id}');
+                          return;
+                        }
+                        if (support.isWaitingInQueue) {
+                          context.go('/support-queue');
+                          return;
+                        }
+                        context.go('/rede-acolhe');
+                      },
                     ),
                     Expanded(
                       child: Align(

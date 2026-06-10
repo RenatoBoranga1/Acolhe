@@ -4,6 +4,8 @@ class StorageKeys {
   static const String chatState = 'acolhe.chat_state';
   static const String chatSession = 'acolhe.chat_session';
   static const String apiBaseUrl = 'acolhe.api_base_url';
+  static const String apiDiscoveredBaseUrl = 'acolhe.api_discovered_base_url';
+  static const String apiLastSubnetPrefix = 'acolhe.api_last_subnet_prefix';
   static const String journalState = 'acolhe.journal_state';
   static const String safetyPlan = 'acolhe.safety_plan';
   static const String contacts = 'acolhe.contacts';

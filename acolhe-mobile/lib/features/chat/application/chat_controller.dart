@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:acolhe_mobile/core/config/backend_config.dart';
 import 'package:acolhe_mobile/core/storage/secure_storage_service.dart';
 import 'package:acolhe_mobile/core/storage/storage_keys.dart';
 import 'package:acolhe_mobile/features/auth/application/auth_controller.dart';
@@ -11,10 +12,10 @@ enum ChatSyncStatus { localOnly, syncing, synced, offline }
 
 extension ChatSyncStatusX on ChatSyncStatus {
   String get label => switch (this) {
-        ChatSyncStatus.localOnly => 'Modo local',
-        ChatSyncStatus.syncing => 'Sincronizando',
-        ChatSyncStatus.synced => 'Backend conectado',
-        ChatSyncStatus.offline => 'Cache offline',
+        ChatSyncStatus.localOnly => 'Modo offline seguro ativado',
+        ChatSyncStatus.syncing => 'Reconectando ao servico inteligente...',
+        ChatSyncStatus.synced => 'Conectado',
+        ChatSyncStatus.offline => 'Modo offline seguro ativado',
       };
 }
 
@@ -261,7 +262,7 @@ class ChatController extends StateNotifier<ChatState> {
         isHydrated: true,
         syncStatus: _repository.isRemoteEnabled
             ? ChatSyncStatus.syncing
-            : ChatSyncStatus.localOnly,
+            : _localSafeSyncStatus(),
         clearError: true,
         clearRetryContext: true,
       );
@@ -276,8 +277,10 @@ class ChatController extends StateNotifier<ChatState> {
       return;
     }
 
-    state =
-        state.copyWith(isHydrated: true, syncStatus: ChatSyncStatus.localOnly);
+    state = state.copyWith(
+      isHydrated: true,
+      syncStatus: _localSafeSyncStatus(),
+    );
     await persist();
   }
 
@@ -525,7 +528,7 @@ class ChatController extends StateNotifier<ChatState> {
       var fallback = _createBlankConversation();
       var syncStatus = _repository.isRemoteEnabled
           ? ChatSyncStatus.offline
-          : ChatSyncStatus.localOnly;
+          : _localSafeSyncStatus();
       String? errorMessage;
       if (_repository.isRemoteEnabled) {
         try {
@@ -767,7 +770,7 @@ class ChatController extends StateNotifier<ChatState> {
       isLoadingHistory: false,
       syncStatus: _repository.isRemoteEnabled
           ? ChatSyncStatus.syncing
-          : ChatSyncStatus.localOnly,
+          : _localSafeSyncStatus(),
       clearError: true,
       clearResponseMetadata: true,
       retryContext: PendingResponseContext(
@@ -910,7 +913,7 @@ class ChatController extends StateNotifier<ChatState> {
         syncStatus: reply.servedFromFallback
             ? (_repository.isRemoteEnabled
                 ? ChatSyncStatus.offline
-                : ChatSyncStatus.localOnly)
+                : _localSafeSyncStatus())
             : ChatSyncStatus.synced,
         lastSyncedAt:
             reply.servedFromFallback ? state.lastSyncedAt : DateTime.now(),
@@ -1092,18 +1095,29 @@ class ChatController extends StateNotifier<ChatState> {
   String _fallbackStatusMessage(String? fallbackReason) {
     return switch (fallbackReason) {
       'not_configured' =>
-        'O backend nao esta configurado neste aparelho. Mantive uma resposta local segura para voce continuar.',
+        'Modo offline seguro ativado. Enquanto o servico inteligente nao fica disponivel, mantive uma resposta local segura para voce continuar.',
       'timeout' =>
-        'O backend demorou para responder. Mantive uma resposta local segura e voce pode tentar novamente quando quiser.',
+        'O servico inteligente demorou para responder. Mantive uma resposta local segura e voce pode tentar novamente quando quiser.',
       'rate_limited' =>
-        'O backend recebeu muitas requisicoes agora. Mantive uma resposta local segura e voce pode tentar novamente em instantes.',
+        'O servico inteligente recebeu muitas tentativas agora. Mantive uma resposta local segura e voce pode tentar novamente em instantes.',
       'conversation_not_found' =>
-        'A conversa precisou ser recriada para continuar com seguranca. Use a resposta local por enquanto ou tente novamente.',
+        'A conversa precisou ser reorganizada para continuar com seguranca. Use a resposta local por enquanto ou tente novamente.',
       'server_error' =>
-        'O backend ficou indisponivel agora. Mantive uma resposta local segura e voce pode tentar novamente.',
+        'O servico inteligente ficou indisponivel agora. Mantive uma resposta local segura e voce pode tentar novamente.',
       _ =>
-        'Sem conexao com o backend agora. Usei uma resposta local segura e sua mensagem continua salva neste aparelho.',
+        'Sem conexao com o servico inteligente agora. Usei uma resposta local segura e sua mensagem continua salva neste aparelho.',
     };
+  }
+
+  ChatSyncStatus _localSafeSyncStatus() {
+    final backend = _ref.read(backendConfigProvider);
+    if (backend.isLoading || backend.isDiscovering) {
+      return ChatSyncStatus.syncing;
+    }
+    if (backend.hasCompletedDiscovery) {
+      return ChatSyncStatus.offline;
+    }
+    return ChatSyncStatus.localOnly;
   }
 }
 

@@ -7,17 +7,11 @@ import 'package:acolhe_mobile/features/chat/data/chat_dtos.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
-final chatHttpClientProvider = Provider<http.Client>((ref) {
-  final client = http.Client();
-  ref.onDispose(client.close);
-  return client;
-});
-
 final chatApiClientProvider = Provider<ChatApiClient>((ref) {
   final effectiveBaseUrl = ref
       .watch(backendConfigProvider.select((state) => state.effectiveBaseUrl));
   return ChatApiClient(
-    ref.read(chatHttpClientProvider),
+    ref.read(backendHttpClientProvider),
     apiBaseUrl: effectiveBaseUrl,
   );
 });
@@ -37,8 +31,11 @@ class ChatApiClient {
     this._client, {
     String? apiBaseUrl,
     this.timeout = const Duration(seconds: 24),
-  }) : _chatBaseUrl =
-            _resolveChatBaseUrl(apiBaseUrl ?? AppEnvironment.apiBaseUrl);
+  }) : _chatBaseUrl = ApiConfig(
+          baseUrl: ApiConfig.normalizeBaseUrl(apiBaseUrl ?? ''),
+          environment: AppEnvironment.current,
+          source: ApiEndpointSource.none,
+        ).chatBaseUrl;
 
   final http.Client _client;
   final Duration timeout;
@@ -217,23 +214,5 @@ class ChatApiClient {
       // Preserve a safe generic error below; response bodies can be inconsistent.
     }
     return 'Backend retornou status ${response.statusCode}.';
-  }
-
-  static String _resolveChatBaseUrl(String rawBaseUrl) {
-    final trimmed = rawBaseUrl.trim();
-    if (trimmed.isEmpty) {
-      return '';
-    }
-    final normalized = trimmed.replaceAll(RegExp(r'/+$'), '');
-    if (normalized.endsWith('/api/v1/chat')) {
-      return normalized;
-    }
-    if (normalized.endsWith('/api/v1')) {
-      return '$normalized/chat';
-    }
-    if (normalized.endsWith('/chat')) {
-      return normalized;
-    }
-    return '$normalized/api/v1/chat';
   }
 }

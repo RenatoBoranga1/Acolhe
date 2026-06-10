@@ -161,6 +161,13 @@ class HomeScreen extends ConsumerWidget {
                 onTap: () => context.push('/support-network'),
               ),
               HomeFeatureCard(
+                title: 'Rede Acolhe',
+                subtitle:
+                    'Converse com uma pessoa da rede de apoio quando quiser acolhimento humano.',
+                icon: Icons.support_agent_outlined,
+                onTap: () => context.push('/rede-acolhe'),
+              ),
+              HomeFeatureCard(
                 title: 'Informacoes e direitos',
                 subtitle:
                     'Conteudo educativo em linguagem clara e facil de atualizar.',

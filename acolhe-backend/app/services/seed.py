@@ -14,6 +14,7 @@ from app.models import (
     Message,
     ResourceArticle,
     SafetyPlan,
+    SupporterProfile,
     TrustedContact,
     User,
 )
@@ -50,6 +51,46 @@ def ensure_demo_data(session: Session) -> None:
         resources = _load_json("data/resources.json")["articles"]
         for item in resources:
             session.add(ResourceArticle(**item))
+
+    if session.scalar(select(SupporterProfile).limit(1)) is None:
+        supporter_user = User(
+            display_name="Lia da Rede Acolhe",
+            hashed_pin=hash_pin("1357"),
+            biometrics_enabled=False,
+            discreet_mode=True,
+        )
+        admin_user = User(
+            display_name="Marina Moderacao",
+            hashed_pin=hash_pin("9753"),
+            biometrics_enabled=False,
+            discreet_mode=True,
+        )
+        session.add_all([supporter_user, admin_user])
+        session.flush()
+        session.add_all(
+            [
+                SupporterProfile(
+                    user_id=supporter_user.id,
+                    display_name="Lia",
+                    role_type="supporter",
+                    specialties=["acolhimento inicial", "rede de apoio"],
+                    verification_status="verified",
+                    is_available=True,
+                    max_active_sessions=3,
+                    training_completed=True,
+                ),
+                SupporterProfile(
+                    user_id=admin_user.id,
+                    display_name="Marina",
+                    role_type="admin",
+                    specialties=["moderacao", "seguranca"],
+                    verification_status="verified",
+                    is_available=False,
+                    max_active_sessions=2,
+                    training_completed=True,
+                ),
+            ]
+        )
 
     seed = _load_json("data/mock_seed.json")
     if session.scalar(select(TrustedContact).limit(1)) is None:
